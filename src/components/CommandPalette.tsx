@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { Search, ChevronDown, ChevronUp, ExternalLink, Settings, LogOut, Plus, Sun, Moon, Monitor, LayoutList, LayoutGrid, LayoutDashboard, X } from "lucide-react";
+import { Search, Plus, Settings, LogOut, Sun, Moon, Monitor, LayoutList, LayoutGrid, LayoutDashboard, X, Keyboard } from "@/components/icons";
+import { AppIcon } from "@/components/AppIcon";
 import type { App as AppType, ThemeMode, ViewMode, AccentColor } from "@/lib/types";
 import { useKeyboardShortcuts, useFocusTrap } from "@/hooks/useKeyboardShortcuts";
 
@@ -13,6 +14,7 @@ interface CommandPaletteProps {
   onAddApp: () => void;
   onOpenSettings: () => void;
   onLogout: () => void;
+  onOpenShortcuts?: () => void;
   currentTheme: ThemeMode;
   onSetTheme: (theme: ThemeMode) => void;
   currentViewMode: ViewMode;
@@ -22,16 +24,6 @@ interface CommandPaletteProps {
   categories: string[];
 }
 
-const ACCENT_OPTIONS: { value: AccentColor; label: string }[] = [
-  { value: "blue", label: "Biru" },
-  { value: "indigo", label: "Indigo" },
-  { value: "violet", label: "Violet" },
-  { value: "pink", label: "Pink" },
-  { value: "rose", label: "Rose" },
-  { value: "amber", label: "Amber" },
-  { value: "emerald", label: "Emerald" },
-];
-
 interface CommandItem {
   id: string;
   label: string;
@@ -39,7 +31,7 @@ interface CommandItem {
   icon: React.ReactNode;
   keywords: string[];
   action: () => void;
-  category: "apps" | "actions" | "theme" | "view" | "accent";
+  category: "recent" | "most-used" | "apps" | "actions" | "theme" | "view";
 }
 
 export default function CommandPalette({
@@ -50,13 +42,11 @@ export default function CommandPalette({
   onAddApp,
   onOpenSettings,
   onLogout,
+  onOpenShortcuts,
   currentTheme,
   onSetTheme,
   currentViewMode,
   onSetViewMode,
-  currentAccent,
-  onSetAccent,
-  categories,
 }: CommandPaletteProps) {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -67,7 +57,7 @@ export default function CommandPalette({
   useEffect(() => {
     const wasOpen = wasOpenRef.current;
     wasOpenRef.current = isOpen;
-    
+
     if (isOpen && !wasOpen) {
       setQuery("");
       setSelectedIndex(0);
@@ -78,157 +68,190 @@ export default function CommandPalette({
   const items = useMemo((): CommandItem[] => {
     const result: CommandItem[] = [];
 
+    // When query is empty, add Recent and Most Used first
+    if (!query.trim()) {
+      const recent = [...apps]
+        .filter((a) => a.lastOpened && !a.isHidden)
+        .sort((a, b) => (b.lastOpened || 0) - (a.lastOpened || 0))
+        .slice(0, 3);
+
+      for (const app of recent) {
+        result.push({
+          id: `recent-${app.id}`,
+          label: app.name,
+          description: "Recent app",
+          icon: <AppIcon icon={app.icon} iconType={app.iconType === "emoji" ? "emoji" : app.iconType === "lucide" ? "lucide" : "brand"} iconSrc={app.iconSrc} name={app.name} className="w-5 h-5" size={20} />,
+          keywords: [app.name, "recent"],
+          action: () => { onOpenApp(app, false); onClose(); },
+          category: "recent",
+        });
+      }
+
+      const mostUsed = [...apps]
+        .filter((a) => (a.clickCount || 0) > 0 && !a.isHidden)
+        .sort((a, b) => (b.clickCount || 0) - (a.clickCount || 0))
+        .slice(0, 3);
+
+      for (const app of mostUsed) {
+        if (!recent.some((r) => r.id === app.id)) {
+          result.push({
+            id: `most-used-${app.id}`,
+            label: app.name,
+            description: `${app.clickCount} opens`,
+            icon: <AppIcon icon={app.icon} iconType={app.iconType === "emoji" ? "emoji" : app.iconType === "lucide" ? "lucide" : "brand"} iconSrc={app.iconSrc} name={app.name} className="w-5 h-5" size={20} />,
+            keywords: [app.name, "most used", "frequent"],
+            action: () => { onOpenApp(app, false); onClose(); },
+            category: "most-used",
+          });
+        }
+      }
+    }
+
+    // Apps
     for (const app of apps) {
       if (app.isHidden) continue;
       result.push({
         id: `app-${app.id}`,
         label: app.name,
         description: app.description || app.url,
-        icon: app.iconType === "emoji" ? <span className="text-lg">{app.icon}</span> : <Monitor size={16} />,
-        keywords: [app.name, app.description, app.category, ...app.tags].map((s) => s.toLowerCase()),
+        icon: <AppIcon icon={app.icon} iconType={app.iconType === "emoji" ? "emoji" : app.iconType === "lucide" ? "lucide" : "brand"} iconSrc={app.iconSrc} name={app.name} className="w-5 h-5" size={20} />,
+        keywords: [app.name, app.description || "", app.category, ...(app.tags || [])].map((s) => s.toLowerCase()),
         action: () => { onOpenApp(app, false); onClose(); },
         category: "apps",
       });
     }
 
+    // Actions
     result.push(
-      { id: "add-app", label: "Add app", description: "Create a new custom app", icon: <Plus size={16} />, keywords: ["tambah", "add", "aplikasi", "app", "buat", "create"], action: () => { onAddApp(); onClose(); }, category: "actions" },
-      { id: "settings", label: "Settings", description: "Open settings", icon: <Settings size={16} />, keywords: ["pengaturan", "settings", "konfigurasi"], action: () => { onOpenSettings(); onClose(); }, category: "actions" },
-      { id: "logout", label: "Sign out", description: "Sign out of dashboard", icon: <LogOut size={16} />, keywords: ["keluar", "logout", "sign out"], action: () => { onLogout(); onClose(); }, category: "actions" }
+      { id: "add-app", label: "Add app", description: "Create a new custom app", icon: <Plus className="w-4 h-4" />, keywords: ["add", "new", "app", "create"], action: () => { onAddApp(); onClose(); }, category: "actions" },
+      { id: "settings", label: "Settings", description: "Open dashboard settings", icon: <Settings className="w-4 h-4" />, keywords: ["settings", "preferences", "config"], action: () => { onOpenSettings(); onClose(); }, category: "actions" },
+      { id: "shortcuts", label: "Keyboard shortcuts", description: "View all keyboard shortcuts", icon: <Keyboard className="w-4 h-4" />, keywords: ["shortcuts", "keys", "help"], action: () => { onOpenShortcuts?.(); onClose(); }, category: "actions" },
+      { id: "logout", label: "Sign out", description: "Sign out of VinDeck", icon: <LogOut className="w-4 h-4" />, keywords: ["logout", "sign out", "exit"], action: () => { onLogout(); onClose(); }, category: "actions" }
     );
 
+    // Theme toggles
     const themes: { value: ThemeMode; label: string; icon: React.ReactNode }[] = [
-      { value: "light", label: "Terang", icon: <Sun size={16} /> },
-      { value: "dark", label: "Gelap", icon: <Moon size={16} /> },
-      { value: "system", label: "Ikuti sistem", icon: <Monitor size={16} /> },
+      { value: "light", label: "Light", icon: <Sun className="w-4 h-4" /> },
+      { value: "dark", label: "Dark", icon: <Moon className="w-4 h-4" /> },
+      { value: "system", label: "System", icon: <Monitor className="w-4 h-4" /> },
     ];
     for (const t of themes) {
       result.push({
         id: `theme-${t.value}`,
-        label: `Tema: ${t.label}`,
-        description: `Ganti tema ke ${t.label.toLowerCase()}`,
+        label: `Theme: ${t.label}`,
+        description: `Switch theme to ${t.label.toLowerCase()}`,
         icon: t.icon,
-        keywords: ["tema", "theme", t.label.toLowerCase(), t.value],
+        keywords: ["theme", t.label.toLowerCase(), t.value],
         action: () => onSetTheme(t.value),
         category: "theme",
       });
     }
 
+    // View toggles
     const views: { value: ViewMode; label: string; icon: React.ReactNode }[] = [
-      { value: "cards", label: "Grid", icon: <LayoutGrid size={16} /> },
-      { value: "list", label: "List", icon: <LayoutList size={16} /> },
-      { value: "compact", label: "Compact", icon: <LayoutDashboard size={16} /> },
+      { value: "cards", label: "Grid", icon: <LayoutGrid className="w-4 h-4" /> },
+      { value: "list", label: "List", icon: <LayoutList className="w-4 h-4" /> },
+      { value: "compact", label: "Compact", icon: <LayoutDashboard className="w-4 h-4" /> },
     ];
     for (const v of views) {
       result.push({
         id: `view-${v.value}`,
-        label: `Tampilan: ${v.label}`,
-        description: `Ganti mode tampilan ke ${v.label.toLowerCase()}`,
+        label: `View: ${v.label}`,
+        description: `Switch view mode to ${v.label.toLowerCase()}`,
         icon: v.icon,
-        keywords: ["tampilan", "view", "mode", v.label.toLowerCase(), v.value],
+        keywords: ["view", "mode", v.label.toLowerCase(), v.value],
         action: () => onSetViewMode(v.value),
         category: "view",
       });
     }
 
-    for (const a of ACCENT_OPTIONS) {
-      result.push({
-        id: `accent-${a.value}`,
-        label: `Warna aksen: ${a.label}`,
-        description: `Ganti warna aksen ke ${a.label}`,
-        icon: <div className="w-4 h-4 rounded-full" style={{ backgroundColor: `var(--color-${a.value}-500)` }} />,
-        keywords: ["warna", "aksen", "color", "accent", a.label.toLowerCase(), a.value],
-        action: () => onSetAccent(a.value),
-        category: "accent",
-      });
-    }
-
     return result;
-  }, [apps, currentTheme, currentViewMode, currentAccent, onOpenApp, onAddApp, onOpenSettings, onLogout, onSetTheme, onSetViewMode, onSetAccent]);
+  }, [apps, query, onOpenApp, onAddApp, onOpenSettings, onOpenShortcuts, onLogout, onSetTheme, onSetViewMode, onClose]);
 
   const filteredItems = useMemo(() => {
     if (!query.trim()) return items;
-    const lowerQuery = query.toLowerCase();
-    return items.filter((item) => item.keywords.includes(lowerQuery) || item.label.toLowerCase().includes(lowerQuery) || item.description.toLowerCase().includes(lowerQuery));
+    const lower = query.toLowerCase();
+    return items.filter((item) =>
+      item.keywords.some((k) => k.includes(lower)) ||
+      item.label.toLowerCase().includes(lower) ||
+      item.description.toLowerCase().includes(lower)
+    );
   }, [items, query]);
 
-  const visibleItems = filteredItems.slice(0, 8);
+  const visibleItems = filteredItems.slice(0, 10);
 
   useKeyboardShortcuts([
-    { key: "Escape", handler: onClose, description: "Tutup palet perintah" },
-    { key: "ArrowDown", handler: () => setSelectedIndex((i) => Math.min(i + 1, visibleItems.length - 1)), description: "Item berikutnya" },
-    { key: "ArrowUp", handler: () => setSelectedIndex((i) => Math.max(i - 1, 0)), description: "Item sebelumnya" },
-    { key: "Enter", handler: () => visibleItems[selectedIndex]?.action(), description: "Jalankan perintah" },
+    { key: "Escape", handler: onClose, description: "Close command palette" },
+    { key: "ArrowDown", handler: () => setSelectedIndex((i) => Math.min(i + 1, visibleItems.length - 1)), description: "Next item" },
+    { key: "ArrowUp", handler: () => setSelectedIndex((i) => Math.max(i - 1, 0)), description: "Previous item" },
+    { key: "Enter", handler: () => visibleItems[selectedIndex]?.action(), description: "Run command" },
   ]);
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4" onClick={onClose}>
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={(e) => e.stopPropagation()} />
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-16 sm:pt-20 px-4 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose}>
       <div
         ref={containerRef}
-        className="relative w-full max-w-2xl bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden animate-fade-in"
+        className="relative w-full max-w-xl rounded-3xl bg-slate-900/95 dark:bg-slate-900/95 light:bg-white/95 border border-slate-800 dark:border-slate-800 light:border-slate-200 shadow-2xl backdrop-blur-2xl overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="relative p-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={(e) => { setQuery(e.target.value); setSelectedIndex(0); }}
-              placeholder="Type a command or search apps..."
-              className="w-full pl-10 pr-10 py-3 text-base bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              autoComplete="off"
-              spellCheck={false}
-            />
-            <kbd className="absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 rounded">
-              Ctrl+K
-            </kbd>
-          </div>
+        <div className="p-4 border-b border-slate-800 light:border-slate-200 flex items-center gap-3">
+          <Search className="w-5 h-5 text-slate-400 flex-shrink-0" />
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setSelectedIndex(0);
+            }}
+            placeholder="Type a command or search apps…"
+            className="flex-1 bg-transparent border-none outline-none text-sm text-slate-100 light:text-slate-900 placeholder-slate-500"
+          />
+          <button onClick={onClose} type="button" className="p-1 rounded-xl text-slate-400 hover:text-slate-200" aria-label="Close">
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
-        <div className="max-h-96 overflow-y-auto">
+        <div className="max-h-96 overflow-y-auto p-2 space-y-1">
           {visibleItems.length === 0 ? (
-            <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-              <X className="mx-auto mb-2 text-gray-300 dark:text-gray-500" size={32} />
-              Tidak ada perintah yang cocok
-            </div>
+            <div className="p-8 text-center text-slate-500 text-sm">No matching results</div>
           ) : (
-            <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-              {visibleItems.map((item, index) => (
-                <li key={item.id}>
-                  <button
-                    onClick={() => { item.action(); onClose(); }}
-                    onMouseEnter={() => setSelectedIndex(index)}
-                    className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
-                      index === selectedIndex
-                        ? "bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100"
-                        : "hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-900 dark:text-gray-100"
-                    }`}
-                  >
-                    <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                      {item.icon}
-                    </span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{item.label}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{item.description}</p>
-                    </div>
-                    <span className="text-xs text-gray-400 dark:text-gray-500 font-mono px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 uppercase">
-                      {item.category}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
+            visibleItems.map((item, index) => (
+              <button
+                key={item.id}
+                onClick={item.action}
+                onMouseEnter={() => setSelectedIndex(index)}
+                type="button"
+                className={`w-full flex items-center justify-between p-3 rounded-2xl text-left transition-colors ${
+                  selectedIndex === index
+                    ? "bg-indigo-500/15 text-indigo-300 light:text-indigo-600 border border-indigo-500/30"
+                    : "text-slate-300 light:text-slate-700 hover:bg-slate-800/50 light:hover:bg-slate-100"
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-slate-800/80 light:bg-slate-100 flex items-center justify-center flex-shrink-0 text-slate-300 light:text-slate-700">
+                    {item.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold truncate">{item.label}</p>
+                    <p className="text-xs text-slate-400 light:text-slate-500 truncate">{item.description}</p>
+                  </div>
+                </div>
+                {item.category === "recent" && (
+                  <span className="text-[10px] uppercase font-semibold text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-full">
+                    Recent
+                  </span>
+                )}
+                {item.category === "most-used" && (
+                  <span className="text-[10px] uppercase font-semibold text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded-full">
+                    Frequent
+                  </span>
+                )}
+              </button>
+            ))
           )}
-        </div>
-
-        <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-500 dark:text-gray-400 flex items-center justify-between">
-          <span>↑↓ Navigasi • Enter Pilih • Esc Tutup</span>
-          <span>{visibleItems.length} hasil</span>
         </div>
       </div>
     </div>

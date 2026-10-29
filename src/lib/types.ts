@@ -46,10 +46,14 @@ export interface UserSettings {
   accentColor: AccentColor;
   viewMode: ViewMode;
   openInNewTab: boolean;
+  openLinksIn: "same-tab" | "new-tab";
   statusEnabled: boolean;
+  statusCheckInterval: number;
   confirmBeforeOpen: boolean;
   animations: "full" | "reduced";
   backgroundEffects: boolean;
+  profilePhoto?: string;
+  profileName?: string;
   schemaVersion: number;
 }
 
@@ -83,12 +87,16 @@ export const DEFAULT_SETTINGS: UserSettings = {
   theme: "system",
   accentColor: "blue",
   viewMode: "cards",
-  openInNewTab: true,
+  openInNewTab: false,
+  openLinksIn: "same-tab",
   statusEnabled: true,
+  statusCheckInterval: 60,
   confirmBeforeOpen: true,
   animations: "full",
   backgroundEffects: true,
-  schemaVersion: 2,
+  profilePhoto: "",
+  profileName: "",
+  schemaVersion: 3,
 };
 
 export const BUILT_IN_CATEGORIES: Category[] = [

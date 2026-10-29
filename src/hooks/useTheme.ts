@@ -9,12 +9,16 @@ const DEFAULT_SETTINGS: UserSettings = {
   theme: "system",
   accentColor: "blue",
   viewMode: "cards",
-  openInNewTab: true,
+  openInNewTab: false,
+  openLinksIn: "same-tab",
   statusEnabled: true,
+  statusCheckInterval: 60,
   confirmBeforeOpen: true,
   animations: "full",
   backgroundEffects: true,
-  schemaVersion: 2,
+  profilePhoto: "",
+  profileName: "",
+  schemaVersion: 3,
 };
 
 const SETTINGS_KEY = "vindeck_settings";

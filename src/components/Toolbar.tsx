@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Grid, List, Layout, Filter, Eye } from "@/components/icons";
+import { Grid, List, Layout, Eye } from "@/components/icons";
 import type { ViewMode, Category } from "@/lib/types";
 import { strings } from "@/lib/strings";
 
@@ -27,7 +27,7 @@ export function Toolbar({
   const [isViewPopoverOpen, setIsViewPopoverOpen] = useState(false);
 
   return (
-    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-6 pb-2">
+    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-4 pb-1">
       {/* Scrollable Category Chips */}
       <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1 flex-1 min-w-0">
         <button
@@ -36,10 +36,22 @@ export function Toolbar({
           className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
             selectedCategory === null
               ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/20"
-              : "bg-slate-800/40 light:bg-slate-200/60 hover:bg-slate-800/80 text-slate-300 light:text-slate-700 border border-slate-700/30 light:border-slate-300/40"
+              : "bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-300 border border-slate-200 dark:border-slate-700/30"
           }`}
         >
-          All categories
+          All
+        </button>
+
+        <button
+          onClick={() => onSelectCategory("favorites")}
+          type="button"
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
+            selectedCategory === "favorites"
+              ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/20"
+              : "bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-300 border border-slate-200 dark:border-slate-700/30"
+          }`}
+        >
+          ★ Favorites
         </button>
 
         {categories.map((cat) => {
@@ -52,7 +64,7 @@ export function Toolbar({
               className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
                 isSelected
                   ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/20"
-                  : "bg-slate-800/40 light:bg-slate-200/60 hover:bg-slate-800/80 text-slate-300 light:text-slate-700 border border-slate-700/30 light:border-slate-300/40"
+                  : "bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 dark:text-slate-300 border border-slate-200 dark:border-slate-700/30"
               }`}
             >
               {cat.name}
@@ -64,14 +76,14 @@ export function Toolbar({
       {/* Right Controls: View Mode & Popover */}
       <div className="flex items-center gap-3 self-end sm:self-auto flex-shrink-0">
         {/* Segmented View Mode Switcher */}
-        <div className="flex items-center p-1 rounded-2xl bg-slate-900/80 light:bg-slate-200/80 border border-slate-800 dark:border-slate-800 light:border-slate-300">
+        <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
           <button
             onClick={() => onViewModeChange("cards")}
             type="button"
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
               viewMode === "cards"
                 ? "bg-indigo-500 text-white shadow-sm"
-                : "text-slate-400 light:text-slate-600 hover:text-slate-200"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             }`}
             aria-label={strings.common.grid}
           >
@@ -85,7 +97,7 @@ export function Toolbar({
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
               viewMode === "list"
                 ? "bg-indigo-500 text-white shadow-sm"
-                : "text-slate-400 light:text-slate-600 hover:text-slate-200"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             }`}
             aria-label={strings.common.list}
           >
@@ -99,7 +111,7 @@ export function Toolbar({
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
               viewMode === "compact"
                 ? "bg-indigo-500 text-white shadow-sm"
-                : "text-slate-400 light:text-slate-600 hover:text-slate-200"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
             }`}
             aria-label={strings.common.compact}
           >
@@ -115,8 +127,8 @@ export function Toolbar({
             type="button"
             className={`flex items-center gap-2 px-3 py-2 rounded-2xl text-xs font-semibold border transition-all ${
               showHiddenApps
-                ? "bg-indigo-500/15 text-indigo-400 border-indigo-500/30"
-                : "bg-slate-900/80 light:bg-slate-200/80 text-slate-300 light:text-slate-700 border-slate-800 dark:border-slate-800 light:border-slate-300 hover:border-slate-700"
+                ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30"
+                : "bg-slate-100 text-slate-700 dark:bg-slate-900/80 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
             }`}
             aria-label="View options"
           >
@@ -125,16 +137,16 @@ export function Toolbar({
           </button>
 
           {isViewPopoverOpen && (
-            <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-slate-900/95 dark:bg-slate-900/95 light:bg-white border border-slate-800 dark:border-slate-800 light:border-slate-200 shadow-xl backdrop-blur-xl p-3 z-30 animate-in fade-in zoom-in-95 duration-150">
+            <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 shadow-xl backdrop-blur-xl p-3 z-30 animate-in fade-in zoom-in-95 duration-150">
               <label className="flex items-center justify-between cursor-pointer select-none">
-                <span className="text-xs font-medium text-slate-200 light:text-slate-800">
+                <span className="text-xs font-medium text-slate-800 dark:text-slate-200">
                   {strings.home.toolbar.showHidden}
                 </span>
                 <input
                   type="checkbox"
                   checked={showHiddenApps}
                   onChange={(e) => onToggleShowHiddenApps(e.target.checked)}
-                  className="w-4 h-4 rounded text-indigo-500 focus:ring-indigo-500 border-slate-700"
+                  className="w-4 h-4 rounded text-indigo-500 focus:ring-indigo-500 border-slate-300 dark:border-slate-700"
                 />
               </label>
             </div>

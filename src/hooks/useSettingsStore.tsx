@@ -9,12 +9,16 @@ const defaultSettings: UserSettings = {
   theme: "system",
   accentColor: "blue",
   viewMode: "cards",
-  openInNewTab: true,
+  openInNewTab: false,
+  openLinksIn: "same-tab",
   statusEnabled: true,
+  statusCheckInterval: 60,
   confirmBeforeOpen: true,
   animations: "full",
   backgroundEffects: true,
-  schemaVersion: 2,
+  profilePhoto: "",
+  profileName: "",
+  schemaVersion: 3,
 };
 
 const SETTINGS_KEY = "vindeck_settings_v2";
@@ -191,6 +195,50 @@ export function useSettingsActions() {
     }
   }, []);
 
+  const setOpenLinksIn = useCallback((openLinksIn: "same-tab" | "new-tab") => {
+    try {
+      const stored = localStorage.getItem(SETTINGS_KEY);
+      const current = stored ? JSON.parse(stored) : {};
+      const updated = { ...defaultSettings, ...current, openLinksIn, openInNewTab: openLinksIn === "new-tab" };
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
+      settingsStore.notify();
+    } catch {
+    }
+  }, []);
+
+  const setStatusCheckInterval = useCallback((statusCheckInterval: number) => {
+    try {
+      const stored = localStorage.getItem(SETTINGS_KEY);
+      const current = stored ? JSON.parse(stored) : {};
+      const updated = { ...defaultSettings, ...current, statusCheckInterval };
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
+      settingsStore.notify();
+    } catch {
+    }
+  }, []);
+
+  const setProfilePhoto = useCallback((profilePhoto: string) => {
+    try {
+      const stored = localStorage.getItem(SETTINGS_KEY);
+      const current = stored ? JSON.parse(stored) : {};
+      const updated = { ...defaultSettings, ...current, profilePhoto };
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
+      settingsStore.notify();
+    } catch {
+    }
+  }, []);
+
+  const setProfileName = useCallback((profileName: string) => {
+    try {
+      const stored = localStorage.getItem(SETTINGS_KEY);
+      const current = stored ? JSON.parse(stored) : {};
+      const updated = { ...defaultSettings, ...current, profileName, greetingName: profileName };
+      localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
+      settingsStore.notify();
+    } catch {
+    }
+  }, []);
+
   const reset = useCallback(() => {
     try {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...defaultSettings }));
@@ -204,11 +252,15 @@ export function useSettingsActions() {
     setAccentColor,
     setViewMode,
     setOpenInNewTab,
+    setOpenLinksIn,
     setStatusEnabled,
+    setStatusCheckInterval,
     setConfirmBeforeOpen,
     setAnimations,
     setBackgroundEffects,
     setGreetingName,
+    setProfilePhoto,
+    setProfileName,
     setDashboardTitle,
     reset,
   };

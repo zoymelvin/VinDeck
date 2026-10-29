@@ -109,7 +109,7 @@ describe("storage", () => {
     expect(data.apps).toBeDefined();
     expect(data.categories).toBeDefined();
     expect(data.settings).toBeDefined();
-    expect(data.schemaVersion).toBe(2);
+    expect(data.schemaVersion).toBe(3);
     expect(data.exportedAt).toBeGreaterThan(0);
   });
 
@@ -123,7 +123,7 @@ describe("storage", () => {
       settings: { ...DEFAULT_SETTINGS, greetingName: "Imported User" },
       quickNotes: "Imported notes",
       exportedAt: Date.now(),
-      schemaVersion: 2,
+      schemaVersion: 3,
     };
 
     const result = importAllData(exportData);
@@ -167,7 +167,7 @@ describe("storage", () => {
       settings: DEFAULT_SETTINGS,
       quickNotes: "",
       exportedAt: Date.now(),
-      schemaVersion: 2,
+      schemaVersion: 3,
     };
     const result = importAllData(exportData);
     expect(result.success).toBe(false);
