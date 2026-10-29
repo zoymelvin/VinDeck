@@ -222,6 +222,16 @@ export function DashboardContent() {
         }}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onSignOut={handleSignOut}
+        onOpenProfile={() => {}}
+        onOpenKeyboardShortcuts={() => {}}
+        onExportData={() => {}}
+        onImportData={() => {}}
+        profilePhoto={undefined}
+        profileName=""
+        theme="system"
+        onSetTheme={() => {}}
+        accentColor="blue"
+        onSetAccentColor={() => {}}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
       />
