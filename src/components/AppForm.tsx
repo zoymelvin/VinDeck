@@ -75,7 +75,7 @@ export default function AppForm({
     if (!name.trim()) newErrors.name = "Nama wajib diisi";
     if (!url.trim()) newErrors.url = "URL wajib diisi";
     else if (!isValidUrl(url)) newErrors.url = "URL tidak valid (harus http:// atau https://)";
-    if (!category) newErrors.category = "Kategori wajib dipilih";
+    if (!category) newErrors.category = "Category is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -135,7 +135,7 @@ export default function AppForm({
         <form onSubmit={handleSubmit}>
           <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              {initialData ? "Ubah Aplikasi" : "Tambah Aplikasi"}
+              {initialData ? "Edit App" : "Add App"}
             </h2>
             <button
               type="button"
@@ -161,7 +161,7 @@ export default function AppForm({
                 className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
                   errors.name ? "border-red-500 focus:ring-red-500" : "border-gray-300 dark:border-gray-600"
                 }`}
-                placeholder="Nama aplikasi"
+                placeholder="App name"
                 disabled={submitting}
                 aria-invalid={!!errors.name}
                 aria-describedby={errors.name ? "name-error" : undefined}
@@ -313,7 +313,7 @@ export default function AppForm({
                     onChange={(e) => setNewCategory(e.target.value)}
                     onKeyDown={(e) => e.key === "Enter" && handleAddCategory(e)}
                     className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Nama kategori baru"
+                    placeholder="New category name"
                     autoFocus
                     disabled={submitting}
                   />
@@ -343,7 +343,7 @@ export default function AppForm({
                   onChange={(e) => setNewTag(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
                   onKeyDown={(e) => e.key === "Enter" && handleAddTag(e)}
                   className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Tambah tag (tekan Enter)"
+                  placeholder="Add tag (press Enter)"
                   maxLength={20}
                   disabled={submitting}
                 />
@@ -375,7 +375,7 @@ export default function AppForm({
               ) : (
                 <>
                   <Check size={16} />
-                  {initialData ? "Simpan Perubahan" : "Tambah Aplikasi"}
+                  {initialData ? "Save Changes" : "Add App"}
                 </>
               )}
             </button>

@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       recordFailedAttempt(ip);
       await new Promise((r) => setTimeout(r, 500));
       return NextResponse.json(
-        { error: "Kata sandi salah" },
+        { error: "Invalid password" },
         { status: 401 }
       );
     }
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       recordFailedAttempt(ip);
       await new Promise((r) => setTimeout(r, 500));
       return NextResponse.json(
-        { error: "Kata sandi salah" },
+        { error: "Invalid password" },
         { status: 401 }
       );
     }
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     recordFailedAttempt(ip);
     await new Promise((r) => setTimeout(r, 500));
     return NextResponse.json(
-      { error: "Kata sandi salah" },
+      { error: "Invalid password" },
       { status: 401 }
     );
   }

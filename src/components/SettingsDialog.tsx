@@ -76,16 +76,16 @@ export default function SettingsDialog({
       const data = JSON.parse(text);
       const result = importAllData(data);
       if (result.success) {
-        showSuccess("Data diimpor berhasil");
+        showSuccess("Data imported successfully");
         onClose();
         window.location.reload();
       } else {
-        setImportError(result.error || "Gagal mengimpor data");
-        showError(result.error || "Gagal mengimpor data");
+        setImportError(result.error || "Failed to import data");
+        showError(result.error || "Failed to import data");
       }
     } catch {
-      setImportError("File tidak valid");
-      showError("File tidak valid");
+      setImportError("Invalid file");
+      showError("Invalid file");
     } finally {
       setImporting(false);
       e.target.value = "";
@@ -93,15 +93,15 @@ export default function SettingsDialog({
   };
 
   const handleReset = async () => {
-    if (!confirm("Yakin ingin mereset ke pengaturan bawaan? Semua aplikasi kustom dan pengaturan akan hilang. Tindakan ini tidak bisa diurungkan.")) return;
+    if (!confirm("Are you sure you want to reset to defaults? All custom apps and settings will be lost. This action cannot be undone.")) return;
     setResetting(true);
     try {
       resetToDefaults();
-      showSuccess("Direset ke pengaturan bawaan");
+      showSuccess("Reset to defaults");
       onClose();
       window.location.reload();
     } catch {
-      showError("Gagal mereset");
+      showError("Failed to reset");
     } finally {
       setResetting(false);
     }
@@ -109,7 +109,7 @@ export default function SettingsDialog({
 
   const handleRestoreApp = (appId: string) => {
     restoreBuiltInApp(appId);
-    showSuccess("Aplikasi dipulihkan");
+    showSuccess("App restored");
   };
 
   if (!isOpen) return null;
@@ -128,7 +128,7 @@ export default function SettingsDialog({
             <div className="space-y-4">
               <div>
                 <label htmlFor="greetingName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nama Sapaan</label>
-                <input id="greetingName" type="text" value={settings.greetingName} onChange={(e) => setGreetingName(e.target.value)} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Pengguna" />
+                <input id="greetingName" type="text" value={settings.greetingName} onChange={(e) => setGreetingName(e.target.value)} className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="" />
               </div>
               <div>
                 <label htmlFor="dashboardTitle" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Judul Dashboard</label>
@@ -160,7 +160,7 @@ export default function SettingsDialog({
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mode Tampilan</label>
                 <div className="flex gap-3">
                   {(["cards", "list", "compact"] as ViewMode[]).map((v) => (
-                    <button key={v} onClick={() => setViewMode(v)} className={`flex-1 px-4 py-3 rounded-lg border-2 font-medium transition-all ${viewMode === v ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200" : "border-gray-300 dark:border-gray-600 hover:border-gray-400"}`}>{v === "cards" ? "Kartu" : v === "list" ? "Daftar" : "Ringkas"}</button>
+                    <button key={v} onClick={() => setViewMode(v)} className={`flex-1 px-4 py-3 rounded-lg border-2 font-medium transition-all ${viewMode === v ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-200" : "border-gray-300 dark:border-gray-600 hover:border-gray-400"}`}>{v === "cards" ? "Grid" : v === "list" ? "List" : "Compact"}</button>
                   ))}
                 </div>
               </div>

@@ -92,9 +92,9 @@ export default function CommandPalette({
     }
 
     result.push(
-      { id: "add-app", label: "Tambah aplikasi", description: "Buat aplikasi kustom baru", icon: <Plus size={16} />, keywords: ["tambah", "add", "aplikasi", "app", "buat", "create"], action: () => { onAddApp(); onClose(); }, category: "actions" },
-      { id: "settings", label: "Pengaturan", description: "Buka halaman pengaturan", icon: <Settings size={16} />, keywords: ["pengaturan", "settings", "konfigurasi"], action: () => { onOpenSettings(); onClose(); }, category: "actions" },
-      { id: "logout", label: "Keluar", description: "Keluar dari dashboard", icon: <LogOut size={16} />, keywords: ["keluar", "logout", "sign out"], action: () => { onLogout(); onClose(); }, category: "actions" }
+      { id: "add-app", label: "Add app", description: "Create a new custom app", icon: <Plus size={16} />, keywords: ["tambah", "add", "aplikasi", "app", "buat", "create"], action: () => { onAddApp(); onClose(); }, category: "actions" },
+      { id: "settings", label: "Settings", description: "Open settings", icon: <Settings size={16} />, keywords: ["pengaturan", "settings", "konfigurasi"], action: () => { onOpenSettings(); onClose(); }, category: "actions" },
+      { id: "logout", label: "Sign out", description: "Sign out of dashboard", icon: <LogOut size={16} />, keywords: ["keluar", "logout", "sign out"], action: () => { onLogout(); onClose(); }, category: "actions" }
     );
 
     const themes: { value: ThemeMode; label: string; icon: React.ReactNode }[] = [
@@ -115,9 +115,9 @@ export default function CommandPalette({
     }
 
     const views: { value: ViewMode; label: string; icon: React.ReactNode }[] = [
-      { value: "cards", label: "Kartu", icon: <LayoutGrid size={16} /> },
-      { value: "list", label: "Daftar", icon: <LayoutList size={16} /> },
-      { value: "compact", label: "Ringkas", icon: <LayoutDashboard size={16} /> },
+      { value: "cards", label: "Grid", icon: <LayoutGrid size={16} /> },
+      { value: "list", label: "List", icon: <LayoutList size={16} /> },
+      { value: "compact", label: "Compact", icon: <LayoutDashboard size={16} /> },
     ];
     for (const v of views) {
       result.push({
@@ -179,7 +179,7 @@ export default function CommandPalette({
               type="text"
               value={query}
               onChange={(e) => { setQuery(e.target.value); setSelectedIndex(0); }}
-              placeholder="Ketik perintah atau cari aplikasi..."
+              placeholder="Type a command or search apps..."
               className="w-full pl-10 pr-10 py-3 text-base bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               autoComplete="off"
               spellCheck={false}

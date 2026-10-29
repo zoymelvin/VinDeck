@@ -23,7 +23,7 @@ export function MeshBackground({ className = "", children }: { className?: strin
     y.set(Math.cos(t * 0.12) * 25 + Math.sin(t * 0.06) * 15);
   });
   
-  const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  const isDark = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   
   const meshStyle = {
     position: "fixed" as const,
