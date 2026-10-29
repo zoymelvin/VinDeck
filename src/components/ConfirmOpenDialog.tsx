@@ -90,6 +90,7 @@ export function ConfirmOpenDialog({
           <AppIcon
             icon={app.icon}
             iconType={app.iconType === "emoji" ? "emoji" : app.iconType === "lucide" ? "lucide" : "brand"}
+            iconSrc={app.iconSrc}
             name={app.name}
             className="w-14 h-14"
             size={56}

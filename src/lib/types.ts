@@ -15,7 +15,9 @@ export interface App {
   description: string;
   url: string;
   icon: string;
-  iconType: "emoji" | "lucide";
+  iconType: "emoji" | "lucide" | "image" | "url";
+  iconSrc?: string;
+  iconCustomized?: boolean;
   accentColor: AccentColor;
   category: string;
   tags: string[];

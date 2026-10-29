@@ -12,7 +12,7 @@ const STORAGE_KEYS = {
   schemaVersion: "vindeck_schema_version",
 } as const;
 
-const CURRENT_SCHEMA_VERSION = 2;
+const CURRENT_SCHEMA_VERSION = 3;
 
 function safeGet<T>(key: string, fallback: T): T {
   if (typeof window !== "undefined" && typeof localStorage === "undefined") return fallback;
@@ -70,7 +70,67 @@ export function migrateIfNeeded(): void {
     safeSet(STORAGE_KEYS.clickTracking, existingClicks);
     safeSet(STORAGE_KEYS.quickNotes, existingNotes);
     setSchemaVersion(CURRENT_SCHEMA_VERSION);
+  } else if (currentVersion === 1 || currentVersion === 2) {
+    // Migrate from v1/v2 to v3: update built-in apps with PNG icons and English descriptions
+    const existingApps = safeGet<App[]>(STORAGE_KEYS.apps, []);
+    const existingCategories = safeGet<Category[]>(STORAGE_KEYS.categories, []);
+    const existingSettings = safeGet<UserSettings>(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
+
+    const mergedApps = mergeAppsV3(existingApps);
+    const mergedCategories = migrateCategoriesV3(existingCategories);
+    const mergedSettings = { ...DEFAULT_SETTINGS, ...existingSettings, schemaVersion: CURRENT_SCHEMA_VERSION };
+
+    safeSet(STORAGE_KEYS.apps, mergedApps);
+    safeSet(STORAGE_KEYS.categories, mergedCategories);
+    safeSet(STORAGE_KEYS.settings, mergedSettings);
+    setSchemaVersion(CURRENT_SCHEMA_VERSION);
   }
+}
+
+function mergeAppsV3(existing: App[]): App[] {
+  const builtInMap = new Map(BUILT_IN_APPS.map((a) => [a.id, a]));
+  const result: App[] = [];
+
+  for (const app of existing) {
+    const builtIn = builtInMap.get(app.id);
+    if (builtIn && !app.iconCustomized) {
+      // Migrate built-in app: update icon and description if not customized
+      result.push({
+        ...builtIn,
+        isHidden: app.isHidden,
+        isPinned: app.isPinned,
+        statusEnabled: app.statusEnabled,
+        sortOrder: app.sortOrder,
+        clickCount: app.clickCount,
+        lastOpened: app.lastOpened,
+        createdAt: app.createdAt,
+        updatedAt: Date.now(),
+      });
+    } else {
+      result.push(app);
+    }
+  }
+
+  // Add any new built-in apps
+  for (const builtIn of BUILT_IN_APPS) {
+    if (!existing.some((a) => a.id === builtIn.id)) {
+      result.push(builtIn);
+    }
+  }
+
+  return result;
+}
+
+function migrateCategoriesV3(existing: Category[]): Category[] {
+  const categoryMap: Record<string, string> = {
+    "Keamanan": "Security",
+    "Sistem": "System",
+    "File": "Files",
+  };
+  return existing.map((cat) => ({
+    ...cat,
+    name: categoryMap[cat.name] || cat.name,
+  }));
 }
 
 function mergeApps(builtIn: App[], existing: App[]): App[] {

@@ -5,7 +5,8 @@ import { LucideIcons, isValidLucideIcon } from "@/components/icons";
 
 interface AppIconProps {
   icon: string;
-  iconType?: "emoji" | "lucide" | "image" | "brand";
+  iconType?: "emoji" | "lucide" | "image" | "url" | "brand";
+  iconSrc?: string;
   name: string;
   className?: string;
   size?: number;
@@ -14,6 +15,7 @@ interface AppIconProps {
 export function AppIcon({
   icon,
   iconType = "brand",
+  iconSrc,
   name,
   className = "w-12 h-12",
   size = 56,
@@ -46,6 +48,22 @@ export function AppIcon({
     return gradients[Math.abs(hash) % gradients.length];
   };
 
+  // If iconSrc is provided (PNG/JPG URL), use it
+  if (iconSrc && !imgError) {
+    return (
+      <div className={`relative flex items-center justify-center overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800/80 p-2 border border-slate-200/50 dark:border-slate-700/50 shadow-sm ${className}`}>
+        <img
+          src={iconSrc}
+          alt={name}
+          className="w-full h-full object-contain filter drop-shadow-sm transition-transform duration-200 group-hover:scale-105"
+          onError={() => setImgError(true)}
+          loading="lazy"
+          referrerPolicy="no-referrer"
+        />
+      </div>
+    );
+  }
+
   // If icon starts with /icons/ or is a known brand icon name
   const isBrandOrImage =
     iconType === "brand" ||
@@ -56,7 +74,7 @@ export function AppIcon({
   if (isBrandOrImage && !imgError) {
     const src = icon.startsWith("/")
       ? icon
-      : `/icons/${icon.toLowerCase().replace(/[^a-z0-9]/g, "")}.svg`;
+      : `/icons/${icon.toLowerCase().replace(/[^a-z0-9]/g, "")}.png`;
 
     return (
       <div className={`relative flex items-center justify-center overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800/80 p-2 border border-slate-200/50 dark:border-slate-700/50 shadow-sm ${className}`}>
@@ -66,6 +84,7 @@ export function AppIcon({
           className="w-full h-full object-contain filter drop-shadow-sm transition-transform duration-200 group-hover:scale-105"
           onError={() => setImgError(true)}
           loading="lazy"
+          referrerPolicy="no-referrer"
         />
       </div>
     );

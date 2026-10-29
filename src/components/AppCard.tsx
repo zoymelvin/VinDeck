@@ -123,7 +123,7 @@ export default function AppCard({
           <div className="flex items-start justify-between gap-2 mb-3">
             <div className="flex items-center gap-3 flex-1 min-w-0">
               <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
-                <AppIcon icon={app.icon} iconType={app.iconType === "emoji" ? "emoji" : app.iconType === "lucide" ? "lucide" : "brand"} name={app.name} className="w-10 h-10" size={40} />
+                <AppIcon icon={app.icon} iconType={app.iconType === "emoji" ? "emoji" : app.iconType === "lucide" ? "lucide" : "brand"} iconSrc={app.iconSrc} name={app.name} className="w-10 h-10" size={40} />
               </div>
               <div className="min-w-0 flex-1">
                 <h3 className="font-semibold text-gray-900 dark:text-gray-100 truncate">{app.name}</h3>
