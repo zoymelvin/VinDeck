@@ -12,7 +12,7 @@ const STORAGE_KEYS = {
   schemaVersion: "vindeck_schema_version",
 } as const;
 
-const CURRENT_SCHEMA_VERSION = 1;
+const CURRENT_SCHEMA_VERSION = 2;
 
 function safeGet<T>(key: string, fallback: T): T {
   if (typeof window !== "undefined" && typeof localStorage === "undefined") return fallback;
@@ -200,21 +200,21 @@ export function exportAllData(): ExportData {
 export function importAllData(data: ExportData): { success: boolean; error?: string } {
   try {
     if (!data || typeof data !== "object") {
-      return { success: false, error: "Data tidak valid" };
+      return { success: false, error: "Invalid data" };
     }
     if (data.schemaVersion !== CURRENT_SCHEMA_VERSION) {
-      return { success: false, error: `Versi skema tidak didukung: ${data.schemaVersion}` };
+      return { success: false, error: `Schema version not supported: ${data.schemaVersion}` };
     }
     if (!Array.isArray(data.apps) || !Array.isArray(data.categories) || !data.settings) {
-      return { success: false, error: "Struktur data tidak lengkap" };
+      return { success: false, error: "Incomplete data structure" };
     }
 
     for (const app of data.apps) {
       if (!app.id || !app.name || !app.url) {
-        return { success: false, error: "Aplikasi tidak valid: field wajib hilang" };
+        return { success: false, error: "Invalid app: required fields missing" };
       }
       if (!isValidUrl(app.url)) {
-        return { success: false, error: `URL tidak valid: ${app.url}` };
+        return { success: false, error: `Invalid URL: ${app.url}` };
       }
     }
 
@@ -225,7 +225,7 @@ export function importAllData(data: ExportData): { success: boolean; error?: str
     setClickTracking({});
     return { success: true };
   } catch (e) {
-    return { success: false, error: "Gagal memproses impor" };
+    return { success: false, error: "Failed to process import" };
   }
 }
 

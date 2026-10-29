@@ -5,7 +5,7 @@ import { Search, Menu, X, Sun, Moon, Settings, LogOut, Plus, Pin, ChevronDown, C
 import type { App as AppType, Category, UserSettings, ViewMode, AccentColor } from "@/lib/types";
 import { getApps, getCategories, getSettings, setApps, setCategories, setSettings, recordClick, getQuickNotes, setQuickNotes, exportAllData, importAllData, resetToDefaults, getHiddenBuiltInApps, restoreBuiltInApp } from "@/lib/storage";
 import { filterApps, sortAppsByOrder, getUniqueCategories } from "@/lib/search";
-import { getGreetingPeriod, getGreetingText, formatDateTimeIndonesian } from "@/lib/greeting";
+import { getGreetingPeriod, getGreetingText, formatDateTime } from "@/lib/greeting";
 import { useTheme, useAccentColor, useViewMode } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 import { useKeyboardShortcuts, useFocusTrap } from "@/hooks/useKeyboardShortcuts";
@@ -415,7 +415,7 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between py-3 border-t border-gray-200 dark:border-gray-700">
             <div className="flex items-center gap-4">
               <div className="text-sm text-gray-500 dark:text-gray-400">
-                {greetingText} • {formatDateTimeIndonesian(now)}
+                {greetingText} • {formatDateTime(now)}
               </div>
               <div className="flex items-center gap-2">
                 <select value={viewMode} onChange={(e) => setViewModeMode(e.target.value as ViewMode)} className="px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -448,7 +448,7 @@ export default function DashboardPage() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" ref={containerRef}>
         <section aria-labelledby="greeting-heading" className="mb-8">
           <h2 id="greeting-heading" className="text-2xl font-semibold text-foreground mb-2">{greetingText}</h2>
-          <p className="text-gray-500 dark:text-gray-400">{formatDateTimeIndonesian(now)}</p>
+          <p className="text-gray-500 dark:text-gray-400">{formatDateTime(now)}</p>
         </section>
 
         {quickNotes !== undefined && (

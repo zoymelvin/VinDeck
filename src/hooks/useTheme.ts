@@ -4,14 +4,17 @@ import { useSyncExternalStore, useCallback, useEffect } from "react";
 import type { ThemeMode, AccentColor, ViewMode, UserSettings } from "@/lib/types";
 
 const DEFAULT_SETTINGS: UserSettings = {
-  greetingName: "Pengguna",
+  greetingName: "",
   dashboardTitle: "VinDeck",
   theme: "system",
   accentColor: "blue",
   viewMode: "cards",
   openInNewTab: true,
   statusEnabled: true,
-  schemaVersion: 1,
+  confirmBeforeOpen: true,
+  animations: "full",
+  backgroundEffects: true,
+  schemaVersion: 2,
 };
 
 const SETTINGS_KEY = "vindeck_settings";

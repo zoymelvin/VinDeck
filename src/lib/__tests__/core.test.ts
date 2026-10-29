@@ -1,52 +1,52 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { getGreetingPeriod, getGreetingText, formatDateTimeIndonesian } from "@/lib/greeting";
+import { describe, it, expect } from "vitest";
+import { getGreetingPeriod, getGreetingText, formatDateTime } from "@/lib/greeting";
 import { isValidUrl, isDangerousUrl, sanitizeUrl } from "@/lib/validation";
 import { filterApps, sortAppsByOrder, getUniqueCategories } from "@/lib/search";
 import type { App, Category, UserSettings, ExportData, AccentColor } from "@/lib/types";
 
 describe("greeting", () => {
-  it("returns malam for 04:00", () => {
-    expect(getGreetingPeriod(new Date("2024-01-01T04:00:00"))).toBe("malam");
+  it("returns evening for 04:00", () => {
+    expect(getGreetingPeriod(new Date("2024-01-01T04:00:00"))).toBe("evening");
   });
-  it("returns pagi for 05:00", () => {
-    expect(getGreetingPeriod(new Date("2024-01-01T05:00:00"))).toBe("pagi");
+  it("returns morning for 05:00", () => {
+    expect(getGreetingPeriod(new Date("2024-01-01T05:00:00"))).toBe("morning");
   });
-  it("returns pagi for 10:59", () => {
-    expect(getGreetingPeriod(new Date("2024-01-01T10:59:00"))).toBe("pagi");
+  it("returns morning for 10:59", () => {
+    expect(getGreetingPeriod(new Date("2024-01-01T10:59:00"))).toBe("morning");
   });
-  it("returns siang for 11:00", () => {
-    expect(getGreetingPeriod(new Date("2024-01-01T11:00:00"))).toBe("siang");
+  it("returns afternoon for 12:00", () => {
+    expect(getGreetingPeriod(new Date("2024-01-01T12:00:00"))).toBe("afternoon");
   });
-  it("returns siang for 14:59", () => {
-    expect(getGreetingPeriod(new Date("2024-01-01T14:59:00"))).toBe("siang");
+  it("returns afternoon for 14:59", () => {
+    expect(getGreetingPeriod(new Date("2024-01-01T14:59:00"))).toBe("afternoon");
   });
-  it("returns sore for 15:00", () => {
-    expect(getGreetingPeriod(new Date("2024-01-01T15:00:00"))).toBe("sore");
+  it("returns afternoon for 15:00", () => {
+    expect(getGreetingPeriod(new Date("2024-01-01T15:00:00"))).toBe("afternoon");
   });
-  it("returns sore for 17:59", () => {
-    expect(getGreetingPeriod(new Date("2024-01-01T17:59:00"))).toBe("sore");
+  it("returns afternoon for 17:59", () => {
+    expect(getGreetingPeriod(new Date("2024-01-01T17:59:00"))).toBe("afternoon");
   });
-  it("returns malam for 18:00", () => {
-    expect(getGreetingPeriod(new Date("2024-01-01T18:00:00"))).toBe("malam");
+  it("returns evening for 18:00", () => {
+    expect(getGreetingPeriod(new Date("2024-01-01T18:00:00"))).toBe("evening");
   });
-  it("returns malam for 04:59", () => {
-    expect(getGreetingPeriod(new Date("2024-01-01T04:59:00"))).toBe("malam");
+  it("returns evening for 04:59", () => {
+    expect(getGreetingPeriod(new Date("2024-01-01T04:59:00"))).toBe("evening");
   });
 
   it("formats greeting text correctly", () => {
-    expect(getGreetingText("pagi", "Budi")).toBe("Selamat pagi, Budi");
-    expect(getGreetingText("siang", "Siti")).toBe("Selamat siang, Siti");
-    expect(getGreetingText("sore", "Ani")).toBe("Selamat sore, Ani");
-    expect(getGreetingText("malam", "Dewi")).toBe("Selamat malam, Dewi");
+    expect(getGreetingText("morning", "Budi")).toBe("Good morning, Budi");
+    expect(getGreetingText("afternoon", "Siti")).toBe("Good afternoon, Siti");
+    expect(getGreetingText("evening", "Ani")).toBe("Good evening, Ani");
+    expect(getGreetingText("morning", "")).toBe("Good morning");
   });
 
-  it("formats date time in Indonesian", () => {
+  it("formats date time in English", () => {
     const date = new Date("2024-01-15T14:30:45");
-    const formatted = formatDateTimeIndonesian(date);
-    expect(formatted).toMatch(/senin|selasa|rabu|kamis|jumat|sabtu|minggu/i);
-    expect(formatted).toMatch(/januari|februari|maret|april|mei|juni|juli|agustus|september|oktober|november|desember/i);
+    const formatted = formatDateTime(date);
+    expect(formatted).toMatch(/Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday/i);
+    expect(formatted).toMatch(/January|February|March|April|May|June|July|August|September|October|November|December/i);
     expect(formatted).toMatch(/15/);
-    expect(formatted).toMatch(/14\.30\.45/);
+    expect(formatted).toMatch(/14:30:45/);
   });
 });
 
@@ -202,18 +202,21 @@ describe("import/export validation", () => {
       viewMode: "cards",
       openInNewTab: true,
       statusEnabled: true,
-      schemaVersion: 1,
+      confirmBeforeOpen: true,
+      animations: "full",
+      backgroundEffects: true,
+      schemaVersion: 2,
     },
     quickNotes: "",
     exportedAt: Date.now(),
-    schemaVersion: 1,
+    schemaVersion: 2,
   };
 
   it("rejects invalid schema version", () => {
     const badData = { ...validExportData, schemaVersion: 999 };
     const result = importAllData(badData);
     expect(result.success).toBe(false);
-    expect(result.error).toContain("skema tidak didukung");
+    expect(result.error).toContain("Schema version not supported");
   });
 
   it("rejects missing required fields", () => {
@@ -225,10 +228,11 @@ describe("import/export validation", () => {
   it("rejects invalid app URL", () => {
     const badData = {
       ...validExportData,
+      schemaVersion: 2,
       apps: [{ id: "1", name: "Test", description: "", url: "javascript:alert(1)", icon: "🔗", iconType: "emoji" as const, accentColor: "blue" as AccentColor, category: "media", tags: [], isBuiltIn: false, isHidden: false, isPinned: false, statusEnabled: true, sortOrder: 0, clickCount: 0, lastOpened: null, createdAt: Date.now(), updatedAt: Date.now() }],
     };
     const result = importAllData(badData);
     expect(result.success).toBe(false);
-    expect(result.error).toContain("URL tidak valid");
+    expect(result.error).toContain("Invalid URL");
   });
 });

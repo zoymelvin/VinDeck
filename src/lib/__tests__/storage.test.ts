@@ -109,7 +109,7 @@ describe("storage", () => {
     expect(data.apps).toBeDefined();
     expect(data.categories).toBeDefined();
     expect(data.settings).toBeDefined();
-    expect(data.schemaVersion).toBe(1);
+    expect(data.schemaVersion).toBe(2);
     expect(data.exportedAt).toBeGreaterThan(0);
   });
 
@@ -123,7 +123,7 @@ describe("storage", () => {
       settings: { ...DEFAULT_SETTINGS, greetingName: "Imported User" },
       quickNotes: "Imported notes",
       exportedAt: Date.now(),
-      schemaVersion: 1,
+      schemaVersion: 2,
     };
 
     const result = importAllData(exportData);
@@ -154,7 +154,7 @@ describe("storage", () => {
     };
     const result = importAllData(exportData);
     expect(result.success).toBe(false);
-    expect(result.error).toContain("skema tidak didukung");
+    expect(result.error).toContain("Schema version not supported");
   });
 
   it("rejects invalid URL in import", async () => {
@@ -167,11 +167,11 @@ describe("storage", () => {
       settings: DEFAULT_SETTINGS,
       quickNotes: "",
       exportedAt: Date.now(),
-      schemaVersion: 1,
+      schemaVersion: 2,
     };
     const result = importAllData(exportData);
     expect(result.success).toBe(false);
-    expect(result.error).toContain("URL tidak valid");
+    expect(result.error).toContain("Invalid URL");
   });
 
   it("resets to defaults", async () => {
