@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, FormEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "@/components/icons";
+import { strings } from "@/lib/strings";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,7 +36,7 @@ export default function LoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Kata sandi salah");
+        setError(data.error || strings.auth.invalidPassword);
         await new Promise((r) => setTimeout(r, 500));
         return;
       }
@@ -43,24 +44,29 @@ export default function LoginPage() {
       router.push(redirect);
       router.refresh();
     } catch {
-      setError("Terjadi kesalahan. Coba lagi.");
+      setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="w-full max-w-md bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 text-slate-100 px-4">
+      <div className="w-full max-w-md bg-slate-900/80 rounded-3xl shadow-2xl border border-slate-800 p-8 backdrop-blur-xl">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">VinDeck</h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">Masuk ke dashboard</p>
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 p-0.5 mx-auto mb-4 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+            <div className="w-full h-full bg-slate-950 rounded-[14px] flex items-center justify-center">
+              <span className="font-bold text-xl text-indigo-400">V</span>
+            </div>
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-white">{strings.auth.title}</h1>
+          <p className="text-slate-400 text-sm mt-1">{strings.auth.subtitle}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              Kata Sandi
+            <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-2">
+              {strings.auth.passwordLabel}
             </label>
             <div className="relative">
               <input
@@ -69,8 +75,8 @@ export default function LoginPage() {
                 type={showPassword ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="Masukkan kata sandi"
+                className="w-full px-4 py-3 pr-12 border border-slate-800 rounded-2xl bg-slate-950 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-colors text-sm"
+                placeholder={strings.auth.passwordPlaceholder}
                 autoComplete="current-password"
                 disabled={loading}
                 aria-describedby={error ? "error-message" : undefined}
@@ -78,16 +84,16 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                aria-label={showPassword ? "Sembunyikan kata sandi" : "Tampilkan kata sandi"}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
+                aria-label={showPassword ? strings.auth.hidePassword : strings.auth.showPassword}
               >
-                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
               </button>
             </div>
           </div>
 
           {error && (
-            <div id="error-message" className="text-red-600 dark:text-red-400 text-sm text-center" role="alert">
+            <div id="error-message" className="text-rose-400 text-sm text-center font-medium" role="alert">
               {error}
             </div>
           )}
@@ -95,21 +101,21 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold rounded-2xl shadow-md shadow-indigo-500/20 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 text-sm"
           >
             {loading ? (
               <>
-                <Loader2 size={18} className="animate-spin" />
-                Masuk...
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>{strings.auth.signingIn}</span>
               </>
             ) : (
-              "Masuk"
+              <span>{strings.auth.signIn}</span>
             )}
           </button>
         </form>
 
-        <p className="mt-6 text-center text-xs text-gray-400 dark:text-gray-500">
-          Hanya untuk pengguna yang berwenang. Data disimpan lokal per perangkat.
+        <p className="mt-6 text-center text-xs text-slate-500 leading-relaxed">
+          {strings.auth.authorizedOnly}
         </p>
       </div>
     </div>
