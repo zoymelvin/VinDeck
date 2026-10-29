@@ -3,12 +3,30 @@
 import { motion, useMotionValue, useSpring, useAnimationFrame } from "motion/react";
 import { useSettingsSelector } from "@/hooks/useSettingsStore";
 import { useTheme } from "@/hooks/useTheme";
+import { useSyncExternalStore } from "react";
 
 export function MeshBackground({ className = "", children }: { className?: string; children?: React.ReactNode }) {
   const { theme } = useTheme();
   const backgroundEffects = useSettingsSelector((s) => s.backgroundEffects);
   const animations = useSettingsSelector((s) => s.animations);
   const reducedMotion = animations === "reduced";
+  
+  const isDark = useSyncExternalStore(
+    (callback) => {
+      if (theme === "system") {
+        const mq = window.matchMedia("(prefers-color-scheme: dark)");
+        mq.addEventListener("change", callback);
+        return () => mq.removeEventListener("change", callback);
+      }
+      return () => {};
+    },
+    () => {
+      if (theme === "dark") return true;
+      if (theme === "light") return false;
+      return window.matchMedia("(prefers-color-scheme: dark)").matches;
+    },
+    () => false
+  );
   
   const x = useMotionValue(0);
   const y = useMotionValue(0);
@@ -22,8 +40,6 @@ export function MeshBackground({ className = "", children }: { className?: strin
     x.set(Math.sin(t * 0.15) * 30 + Math.cos(t * 0.08) * 20);
     y.set(Math.cos(t * 0.12) * 25 + Math.sin(t * 0.06) * 15);
   });
-  
-  const isDark = theme === "dark" || (theme === "system" && typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches);
   
   const meshStyle = {
     position: "fixed" as const,

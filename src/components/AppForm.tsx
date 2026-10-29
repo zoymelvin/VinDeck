@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { X, Check, ChevronDown, Plus } from "lucide-react";
-import type { App as AppType, Category, AccentColor, LucideIconName } from "@/lib/types";
-import { LUCIDE_ICONS, ACCENT_COLORS } from "@/lib/types";
-import { isValidUrl } from "@/lib/validation";
+import { X, ChevronDown, ChevronUp, RotateCcw } from "@/components/icons";
+import { AppIcon } from "@/components/AppIcon";
+import type { App as AppType, Category, AccentColor } from "@/lib/types";
+import { ACCENT_COLORS } from "@/lib/types";
 
 interface AppFormProps {
   isOpen: boolean;
@@ -27,22 +27,24 @@ export default function AppForm({
     if (initialData) {
       return {
         name: initialData.name,
-        description: initialData.description,
+        description: initialData.description || "",
         url: initialData.url,
-        icon: initialData.iconType === "emoji" ? { type: "emoji" as const, value: initialData.icon } : { type: "lucide" as const, value: initialData.icon as LucideIconName },
+        iconUrl: initialData.iconSrc || "",
         accentColor: initialData.accentColor,
         category: initialData.category,
-        tags: initialData.tags,
+        tags: initialData.tags || [],
+        iconStatus: (initialData.iconSrc ? "valid" : "idle") as "idle" | "loading" | "valid" | "error",
       };
     }
     return {
       name: "",
       description: "",
       url: "",
-      icon: { type: "emoji" as const, value: "🔗" },
+      iconUrl: "",
       accentColor: "blue" as AccentColor,
-      category: categories[0]?.id || "",
+      category: categories[0]?.id || "media",
       tags: [] as string[],
+      iconStatus: "idle" as "idle" | "loading" | "valid" | "error",
     };
   };
 
@@ -51,400 +53,430 @@ export default function AppForm({
   const [name, setName] = useState(initial.name);
   const [description, setDescription] = useState(initial.description);
   const [url, setUrl] = useState(initial.url);
-  const [icon, setIcon] = useState(initial.icon);
+  const [iconUrl, setIconUrl] = useState(initial.iconUrl);
   const [accentColor, setAccentColor] = useState(initial.accentColor);
   const [category, setCategory] = useState(initial.category);
   const [newCategory, setNewCategory] = useState("");
+  const [showNewCategory, setShowNewCategory] = useState(false);
   const [tags, setTags] = useState(initial.tags);
-  const [newTag, setNewTag] = useState("");
-  const [showLucidePicker, setShowLucidePicker] = useState(false);
-  const [showCategoryInput, setShowCategoryInput] = useState(false);
+  const [tagInput, setTagInput] = useState("");
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
+  const [iconStatus, setIconStatus] = useState(initial.iconStatus);
+  const [iconError, setIconError] = useState("");
+
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
-  const formRef = useRef<HTMLDivElement>(null);
   const firstInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      setTimeout(() => firstInputRef.current?.focus(), 100);
-    }
-  }, [isOpen]);
+    setTimeout(() => firstInputRef.current?.focus(), 50);
+  }, []);
 
-  const validate = () => {
-    const newErrors: Record<string, string> = {};
-    if (!name.trim()) newErrors.name = "Nama wajib diisi";
-    if (!url.trim()) newErrors.url = "URL wajib diisi";
-    else if (!isValidUrl(url)) newErrors.url = "URL tidak valid (harus http:// atau https://)";
-    if (!category) newErrors.category = "Category is required";
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  // Validate Icon URL
+  useEffect(() => {
+    const trimmed = iconUrl.trim();
+    if (!trimmed) {
+      // Use setTimeout to avoid synchronous setState
+      const id = setTimeout(() => {
+        setIconStatus("idle");
+        setIconError("");
+      }, 0);
+      return () => clearTimeout(id);
+    }
+
+    // Must be https: (reject http, data, javascript, file)
+    if (!trimmed.startsWith("https://")) {
+      const id = setTimeout(() => {
+        setIconStatus("error");
+        setIconError("Icon URL must start with https://");
+      }, 0);
+      return () => clearTimeout(id);
+    }
+
+    // If it's a local icon from /icons/, it's valid
+    if (trimmed.startsWith("/icons/")) {
+      const id = setTimeout(() => {
+        setIconStatus("valid");
+        setIconError("");
+      }, 0);
+      return () => clearTimeout(id);
+    }
+
+    const id = setTimeout(() => setIconStatus("loading"), 0);
+    const img = new Image();
+    const timeout = setTimeout(() => {
+      img.src = "";
+      setIconStatus("error");
+      setIconError("Couldn't load this image (timeout).");
+    }, 8000);
+
+    img.onload = () => {
+      clearTimeout(timeout);
+      setIconStatus("valid");
+      setIconError("");
+    };
+
+    img.onerror = () => {
+      clearTimeout(timeout);
+      setIconStatus("error");
+      setIconError("Couldn't load this image");
+    };
+
+    img.src = trimmed;
+
+    return () => {
+      clearTimeout(id);
+      clearTimeout(timeout);
+    };
+  }, [iconUrl]);
+
+  if (!isOpen) return null;
+
+  const validateUrl = (val: string): boolean => {
+    try {
+      const parsed = new URL(val);
+      if (parsed.protocol === "https:") return true;
+      if (parsed.protocol === "http:" && (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1")) return true;
+      return false;
+    } catch {
+      return false;
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
-    setSubmitting(true);
-    const appData: Partial<AppType> & { id?: string } = {
+    const newErrors: Record<string, string> = {};
+
+    if (!name.trim()) newErrors.name = "Name is required";
+    if (!url.trim()) {
+      newErrors.url = "URL is required";
+    } else if (!validateUrl(url)) {
+      newErrors.url = "URL must use https:// (or http:// for localhost)";
+    }
+
+    const effectiveCategory = showNewCategory ? newCategory.trim() : category;
+    if (!effectiveCategory) {
+      newErrors.category = "Category is required";
+    }
+
+    if (iconStatus === "error") {
+      newErrors.icon = "Invalid icon URL";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    if (showNewCategory && newCategory.trim()) {
+      onAddCategory(newCategory.trim());
+    }
+
+    const isBuiltIn = initialData?.isBuiltIn ?? false;
+    const isCustomized = isBuiltIn && iconUrl !== (initialData?.iconSrc || "");
+
+    onSubmit({
+      ...(initialData?.id ? { id: initialData.id } : {}),
       name: name.trim(),
       description: description.trim(),
       url: url.trim(),
-      icon: icon.value,
-      iconType: icon.type,
+      icon: "",
+      iconType: iconUrl ? "url" : "image",
+      iconSrc: iconUrl.trim() || undefined,
+      iconCustomized: isCustomized ? true : initialData?.iconCustomized,
       accentColor,
-      category,
+      category: effectiveCategory.toLowerCase().replace(/\s+/g, "-"),
       tags,
-    };
-    if (initialData?.id) appData.id = initialData.id;
-    onSubmit(appData);
-    setSubmitting(false);
+    });
   };
 
-  const handleAddTag = (e: React.FormEvent) => {
-    e.preventDefault();
-    const tag = newTag.trim().toLowerCase();
-    if (tag && !tags.includes(tag) && tags.length < 10) {
-      setTags([...tags, tag]);
-      setNewTag("");
+  const handleResetDefaultIcon = () => {
+    if (initialData?.isBuiltIn) {
+      setIconUrl(`/icons/${initialData.id}.png`);
     }
   };
 
-  const handleRemoveTag = (tag: string) => {
-    setTags(tags.filter((t) => t !== tag));
-  };
-
-  const handleAddCategory = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cat = newCategory.trim();
-    if (cat) {
-      onAddCategory(cat);
-      setCategory(cat.toLowerCase().replace(/\s+/g, "-"));
-      setNewCategory("");
-      setShowCategoryInput(false);
+  const handleAddTag = () => {
+    const trimmed = tagInput.trim().toLowerCase();
+    if (trimmed && !tags.includes(trimmed)) {
+      setTags([...tags, trimmed]);
+      setTagInput("");
     }
   };
 
-  if (!isOpen) return null;
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter((t) => t !== tagToRemove));
+  };
+
+  const isSaveDisabled = iconStatus === "loading" || iconStatus === "error";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200">
       <div
-        ref={formRef}
-        className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 animate-fade-in"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="app-form-title"
+        className="relative w-full max-w-lg rounded-t-3xl sm:rounded-3xl bg-slate-900/95 dark:bg-slate-900/95 light:bg-white/95 border border-slate-800 dark:border-slate-800 light:border-slate-200 shadow-2xl backdrop-blur-2xl max-h-[90vh] flex flex-col overflow-hidden animate-in slide-in-from-bottom sm:zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <form onSubmit={handleSubmit}>
-          <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-              {initialData ? "Edit App" : "Add App"}
-            </h2>
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-2 rounded-lg text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              aria-label="Tutup"
-            >
-              <X size={20} />
-            </button>
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-slate-800 light:border-slate-200">
+          <h2 id="app-form-title" className="text-lg font-bold text-slate-100 light:text-slate-900">
+            {initialData ? "Edit App" : "Add App"}
+          </h2>
+          <button
+            onClick={onClose}
+            type="button"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Scrollable Form Body */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* Name Field */}
+          <div>
+            <label htmlFor="app-name" className="block text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider mb-1.5">
+              Name *
+            </label>
+            <input
+              ref={firstInputRef}
+              id="app-name"
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="App name"
+              className="w-full px-4 py-2.5 rounded-2xl bg-slate-950/60 light:bg-slate-100 border border-slate-800 light:border-slate-300 text-sm text-slate-200 light:text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            />
+            {errors.name && <p className="text-xs text-rose-400 mt-1">{errors.name}</p>}
           </div>
 
-          <div className="p-6 space-y-6">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Nama <span className="text-red-500">*</span>
-              </label>
-              <input
-                ref={firstInputRef}
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.name ? "border-red-500 focus:ring-red-500" : "border-gray-300 dark:border-gray-600"
-                }`}
-                placeholder="App name"
-                disabled={submitting}
-                aria-invalid={!!errors.name}
-                aria-describedby={errors.name ? "name-error" : undefined}
-              />
-              {errors.name && <p id="name-error" className="mt-1 text-sm text-red-500" role="alert">{errors.name}</p>}
-            </div>
-
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Deskripsi
-              </label>
-              <textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                placeholder="Deskripsi singkat (opsional)"
-                disabled={submitting}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="url" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                URL <span className="text-red-500">*</span>
-              </label>
-              <input
-                id="url"
-                type="url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
-                  errors.url ? "border-red-500 focus:ring-red-500" : "border-gray-300 dark:border-gray-600"
-                }`}
-                placeholder="https://contoh.com"
-                disabled={submitting}
-                aria-invalid={!!errors.url}
-                aria-describedby={errors.url ? "url-error" : undefined}
-              />
-              {errors.url && <p id="url-error" className="mt-1 text-sm text-red-500" role="alert">{errors.url}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Ikon
-              </label>
-              <div className="flex items-center gap-3">
-                <div className="relative flex-1">
-                  <select
-                    value={icon.type}
-                    onChange={(e) => {
-                      const newType = e.target.value as "emoji" | "lucide";
-                      if (newType === "emoji") {
-                        setIcon({ type: "emoji", value: "🔗" });
-                      } else {
-                        setIcon({ type: "lucide", value: LUCIDE_ICONS[0] });
-                      }
-                    }}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none bg-no-repeat bg-right pr-10"
-                    disabled={submitting}
-                  >
-                    <option value="emoji">Emoji</option>
-                    <option value="lucide">Ikon Lucide</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-                </div>
-                {icon.type === "emoji" ? (
-                  <input
-                    type="text"
-                    value={icon.value}
-                    onChange={(e) => setIcon({ type: "emoji", value: e.target.value.slice(0, 2) })}
-                    maxLength={2}
-                    className="w-12 px-3 py-3 text-center text-2xl border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    placeholder="🔗"
-                    disabled={submitting}
-                    aria-label="Emoji ikon"
-                  />
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setShowLucidePicker(true)}
-                    className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-left focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors flex items-center gap-3"
-                    disabled={submitting}
-                  >
-                    <span className="w-8 h-8 flex items-center justify-center">
-                      {getLucideIcon(icon.value)}
-                    </span>
-                    <span className="flex-1 truncate capitalize">{icon.value}</span>
-                    <ChevronDown className="text-gray-400" size={16} />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Warna Akses
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {ACCENT_COLORS.map((color) => (
-                  <button
-                    key={color.value}
-                    type="button"
-                    onClick={() => setAccentColor(color.value)}
-                    className={`w-10 h-10 rounded-lg border-2 transition-all ${
-                      accentColor === color.value
-                        ? "border-current scale-110 shadow-lg"
-                        : "border-transparent hover:border-gray-300 dark:hover:border-gray-600"
-                    }`}
-                    style={{ backgroundColor: `var(--color-${color.value}-500)` }}
-                    aria-label={color.label}
-                    aria-pressed={accentColor === color.value}
-                    disabled={submitting}
-                  >
-                    {accentColor === color.value && <Check className="w-5 h-5 text-white mx-auto" />}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Kategori <span className="text-red-500">*</span>
-              </label>
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <select
-                    value={category}
-                    onChange={(e) => { setCategory(e.target.value); setShowCategoryInput(false); }}
-                    className={`w-full px-4 py-3 border rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none bg-no-repeat bg-right pr-10 ${
-                      errors.category ? "border-red-500 focus:ring-red-500" : "border-gray-300 dark:border-gray-600"
-                    }`}
-                    disabled={submitting}
-                    aria-invalid={!!errors.category}
-                  >
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
-                    <option value="__new__">+ Buat kategori baru...</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-                </div>
-              </div>
-              {showCategoryInput && (
-                <div className="mt-2 flex gap-2">
-                  <input
-                    type="text"
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleAddCategory(e)}
-                    className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="New category name"
-                    autoFocus
-                    disabled={submitting}
-                  />
-                  <button type="button" onClick={handleAddCategory} className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" disabled={submitting}>Tambah</button>
-                  <button type="button" onClick={() => { setShowCategoryInput(false); setNewCategory(""); }} className="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors" disabled={submitting}>Batal</button>
-                </div>
-              )}
-              {errors.category && <p className="mt-1 text-sm text-red-500" role="alert">{errors.category}</p>}
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                Tag
-              </label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {tags.map((tag) => (
-                  <span key={tag} className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-full text-sm">
-                    {tag}
-                    <button type="button" onClick={() => handleRemoveTag(tag)} className="hover:text-blue-600 dark:hover:text-blue-400" aria-label={`Hapus tag ${tag}`}><X size={12} /></button>
-                  </span>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddTag(e)}
-                  className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Add tag (press Enter)"
-                  maxLength={20}
-                  disabled={submitting}
-                />
-                <button type="button" onClick={handleAddTag} className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" disabled={submitting || !newTag.trim() || tags.length >= 10}>Tambah</button>
-              </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Maksimal 10 tag, huruf kecil dan tanda hubung saja</p>
-            </div>
+          {/* Description Field */}
+          <div>
+            <label htmlFor="app-desc" className="block text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider mb-1.5">
+              Description (optional)
+            </label>
+            <input
+              id="app-desc"
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Brief description"
+              className="w-full px-4 py-2.5 rounded-2xl bg-slate-950/60 light:bg-slate-100 border border-slate-800 light:border-slate-300 text-sm text-slate-200 light:text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            />
           </div>
 
-          <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-6 py-3 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg font-medium hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-              disabled={submitting}
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-              disabled={submitting}
-            >
-              {submitting ? (
-                <>
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/></svg>
-                  Menyimpan...
-                </>
-              ) : (
-                <>
-                  <Check size={16} />
-                  {initialData ? "Save Changes" : "Add App"}
-                </>
-              )}
-            </button>
+          {/* URL Field */}
+          <div>
+            <label htmlFor="app-url" className="block text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider mb-1.5">
+              URL *
+            </label>
+            <input
+              id="app-url"
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://example.com"
+              className="w-full px-4 py-2.5 rounded-2xl bg-slate-950/60 light:bg-slate-100 border border-slate-800 light:border-slate-300 text-sm text-slate-200 light:text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 font-mono text-xs"
+            />
+            {errors.url && <p className="text-xs text-rose-400 mt-1">{errors.url}</p>}
           </div>
-        </form>
-      </div>
 
-      {showLucidePicker && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setShowLucidePicker(false)}>
-          <div className="w-full max-w-3xl max-h-[80vh] bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 overflow-hidden animate-fade-in" onClick={(e) => e.stopPropagation()}>
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Pilih Ikon Lucide</h3>
-              <button onClick={() => setShowLucidePicker(false)} className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700"><X size={20} /></button>
-            </div>
-            <div className="p-4 max-h-[60vh] overflow-y-auto grid grid-cols-6 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-2">
-              {LUCIDE_ICONS.map((iconName) => (
+          {/* Icon URL Field with Live Preview */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label htmlFor="app-icon" className="block text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider">
+                Icon URL (optional)
+              </label>
+              {initialData?.isBuiltIn && (
                 <button
-                  key={iconName}
                   type="button"
-                  onClick={() => { setIcon({ type: "lucide", value: iconName }); setShowLucidePicker(false); }}
-                  className={`p-3 rounded-lg border-2 transition-all flex flex-col items-center gap-1 ${
-                    icon.type === "lucide" && icon.value === iconName
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30"
-                      : "border-transparent hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                  }`}
-                  disabled={submitting}
+                  onClick={handleResetDefaultIcon}
+                  className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-medium"
                 >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-6 h-6">
-                    {getLucideIcon(iconName)}
-                  </svg>
-                  <span className="text-xs text-center truncate w-full capitalize">{iconName.toLowerCase()}</span>
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Reset to default icon</span>
                 </button>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <input
+                  id="app-icon"
+                  type="text"
+                  value={iconUrl}
+                  onChange={(e) => setIconUrl(e.target.value)}
+                  placeholder="https://example.com/logo.png"
+                  className="w-full px-4 py-2.5 rounded-2xl bg-slate-950/60 light:bg-slate-100 border border-slate-800 light:border-slate-300 text-xs text-slate-200 light:text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 font-mono"
+                />
+              </div>
+              {/* 56px Live Preview */}
+              <div className="w-14 h-14 rounded-2xl bg-slate-950/60 light:bg-slate-100 border border-slate-800 light:border-slate-300 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                <AppIcon
+                  icon=""
+                  iconType={iconUrl ? "url" : "brand"}
+                  iconSrc={iconUrl || undefined}
+                  name={name || "App"}
+                  className="w-10 h-10"
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+              Paste a link to a PNG, JPG, WEBP or SVG image. Tip: dashboardicons.com has logos for most self-hosted apps.
+            </p>
+            {iconStatus === "loading" && <p className="text-xs text-amber-400 mt-1 font-medium">Checking image…</p>}
+            {iconStatus === "error" && <p className="text-xs text-rose-400 mt-1 font-medium">{iconError}</p>}
+          </div>
+
+          {/* Accent Color Selection (6 swatches) */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider mb-2">
+              Accent Color
+            </label>
+            <div className="flex items-center gap-2.5">
+              {ACCENT_COLORS.map((ac) => (
+                <button
+                  key={ac.value}
+                  type="button"
+                  onClick={() => setAccentColor(ac.value)}
+                  className={`w-7 h-7 rounded-full border-2 transition-all ${
+                    accentColor === ac.value ? "border-white light:border-slate-900 scale-110 shadow-md" : "border-transparent hover:scale-105"
+                  }`}
+                  style={{ backgroundColor: `var(${ac.cssVar})` }}
+                  aria-label={ac.label}
+                />
               ))}
             </div>
           </div>
+
+          {/* Category Combobox */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider mb-1.5">
+              Category *
+            </label>
+            {!showNewCategory ? (
+              <div className="flex items-center gap-2">
+                <select
+                  value={category}
+                  onChange={(e) => {
+                    if (e.target.value === "__new__") {
+                      setShowNewCategory(true);
+                      setNewCategory("");
+                    } else {
+                      setCategory(e.target.value);
+                    }
+                  }}
+                  className="flex-1 px-4 py-2.5 rounded-2xl bg-slate-950/60 light:bg-slate-100 border border-slate-800 light:border-slate-300 text-sm text-slate-200 light:text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                >
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                  <option value="__new__">+ Create new category…</option>
+                </select>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="New category name"
+                  className="flex-1 px-4 py-2.5 rounded-2xl bg-slate-950/60 light:bg-slate-100 border border-slate-800 light:border-slate-300 text-sm text-slate-200 light:text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowNewCategory(false)}
+                  className="px-3 py-2 text-xs font-semibold text-slate-400 hover:text-slate-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+            {errors.category && <p className="text-xs text-rose-400 mt-1">{errors.category}</p>}
+          </div>
+
+          {/* Collapsible More Options (Tags) */}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={() => setShowMoreOptions(!showMoreOptions)}
+              className="flex items-center gap-2 text-xs font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+            >
+              {showMoreOptions ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              <span>{showMoreOptions ? "Less options" : "More options (Tags)"}</span>
+            </button>
+
+            {showMoreOptions && (
+              <div className="mt-3 p-3 rounded-2xl bg-slate-950/40 light:bg-slate-100 border border-slate-800 light:border-slate-300 space-y-2">
+                <label className="block text-xs font-semibold text-slate-400 light:text-slate-600">
+                  Tags
+                </label>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {tags.map((t) => (
+                    <span
+                      key={t}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-800 text-slate-200 text-xs"
+                    >
+                      <span>{t}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveTag(t)}
+                        className="text-slate-400 hover:text-rose-400"
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={tagInput}
+                    onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddTag();
+                      }
+                    }}
+                    placeholder="Add tag and press Enter"
+                    className="flex-1 px-3 py-1.5 rounded-xl bg-slate-900 light:bg-white border border-slate-800 light:border-slate-300 text-xs text-slate-200 light:text-slate-800 placeholder-slate-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddTag}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </form>
+
+        {/* Fixed Footer */}
+        <div className="p-4 border-t border-slate-800 light:border-slate-200 flex items-center justify-end gap-3 bg-slate-900/95 light:bg-white/95">
+          <button
+            onClick={onClose}
+            type="button"
+            className="px-4 py-2.5 rounded-2xl text-sm font-semibold text-slate-300 light:text-slate-700 bg-slate-800/50 light:bg-slate-100 hover:bg-slate-800 light:hover:bg-slate-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isSaveDisabled}
+            type="button"
+            className="px-5 py-2.5 rounded-2xl text-sm font-semibold text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-indigo-500/20 active:scale-95 transition-all"
+          >
+            {initialData ? "Save Changes" : "Add App"}
+          </button>
         </div>
-      )}
+      </div>
     </div>
   );
-}
-
-function getLucideIcon(name: string): React.ReactNode {
-  const icons: Record<string, React.ReactNode> = {
-    Monitor: (<><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></>),
-    Server: (<><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6" y2="6"/><line x1="6" y1="18" x2="6" y2="18"/></>),
-    Database: (<><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19"/><path d="M3 5A9 3 0 0 1 21 5"/></>),
-    Shield: (<><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></>),
-    Lock: (<><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></>),
-    Key: (<><circle cx="12" cy="16" r="3"/><path d="M12 12v-4"/><path d="M12 8h-2"/><path d="M12 8h2"/><path d="M12 8v-2"/></>),
-    Folder: (<><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></>),
-    FileText: (<><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 22H4a2 2 0 0 1-2-2V7l5-5H6"/></>),
-    Globe: (<><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></>),
-    Image: (<><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></>),
-    Film: (<><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="7" x2="22" y2="7"/><line x1="2" y1="17" x2="22" y2="17"/></>),
-    Music: (<><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></>),
-    Video: (<><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></>),
-    Terminal: (<><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></>),
-    Code: (<><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></>),
-    Cloud: (<><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></>),
-    Wifi: (<><path d="M5 13a10 10 0 0 1 14 0"/><path d="M8.5 16.5a5 5 0 0 1 7 0"/><line x1="12" y1="20" x2="12" y2="20"/></>),
-    Cpu: (<><rect x="4" y="4" width="16" height="16" rx="2"/><path d="M9 4v4"/><path d="M15 4v4"/><path d="M9 16v4"/><path d="M15 16v4"/><path d="M4 9h4"/><path d="M16 9h4"/><path d="M4 15h4"/><path d="M16 15h4"/></>),
-    HardDrive: (<><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></>),
-    MemoryStick: (<><path d="M12 2v4"/><path d="M12 18v4"/><path d="M4.93 4.93l2.83 2.83"/><path d="M16.24 16.24l2.83 2.83"/><path d="M2 12h4"/><path d="M18 12h4"/><path d="M4.93 19.07l2.83-2.83"/><path d="M16.24 7.76l2.83-2.83"/></>),
-    Router: (<><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="16" y1="16" x2="16.01" y2="16"/></>),
-    User: (<><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></>),
-    Users: (<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></>),
-    Mail: (<><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></>),
-    MessageSquare: (<><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></>),
-    Phone: (<><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></>),
-  };
-  return icons[name] || <rect x="3" y="3" width="18" height="18" rx="2"/>;
 }

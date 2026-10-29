@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import {
   Pin,
@@ -8,7 +8,7 @@ import {
   Zap,
   FileText,
 } from "@/components/icons";
-import type { App as AppType, Category, ViewMode } from "@/lib/types";
+import type { App as AppType, Category, ViewMode, AccentColor } from "@/lib/types";
 import {
   getApps,
   getCategories,
@@ -18,11 +18,13 @@ import {
   setCategories,
   recordClick,
   getHiddenBuiltInApps,
+  exportAllData,
+  importAllData,
 } from "@/lib/storage";
 import { filterApps, sortAppsByOrder } from "@/lib/search";
 import { getGreetingPeriod, getGreetingText, formatDateTime } from "@/lib/greeting";
 import { getNotes, Note } from "@/lib/notes";
-import { useSettingsStore, SettingsProvider } from "@/hooks/useSettingsStore";
+import { useSettingsSelector, SettingsProvider } from "@/hooks/useSettingsStore";
 import { useTheme } from "@/hooks/useTheme";
 import { useToast } from "@/hooks/useToast";
 
@@ -33,6 +35,8 @@ import AppForm from "@/components/AppForm";
 import SettingsDialog from "@/components/SettingsDialog";
 import CommandPalette from "@/components/CommandPalette";
 import { ConfirmOpenDialog } from "@/components/ConfirmOpenDialog";
+import { KeyboardShortcutsDialog } from "@/components/KeyboardShortcutsDialog";
+import { ProfileDialog } from "@/components/ProfileDialog";
 import { MeshBackground } from "@/components/MeshBackground";
 import { strings } from "@/lib/strings";
 
@@ -48,11 +52,16 @@ export function DashboardContent() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAddAppOpen, setIsAddAppOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [editingApp, setEditingApp] = useState<AppType | null>(null);
   const [confirmApp, setConfirmApp] = useState<AppType | null>(null);
 
   // App statuses
-  const [appStatuses] = useState<Record<string, "checking" | "reachable" | "unreachable" | null>>({});
+  const [appStatuses, setAppStatuses] = useState<Record<string, "checking" | "reachable" | "unreachable" | null>>({});
+  const [statusInfo, setStatusInfo] = useState<Record<string, { status: "checking" | "reachable" | "unreachable"; lastChecked: number; latencyMs: number } | null>>({});
+  const statusCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const initialStatusCheckDone = useRef(false);
 
   // Clock
   const [now, setNow] = useState<Date | null>(null);
@@ -60,8 +69,12 @@ export function DashboardContent() {
   // Notes for Bento tile
   const [recentNotes, setRecentNotes] = useState<Note[]>(() => getNotes().slice(0, 2));
 
-  const { theme } = useTheme();
-  const { showSuccess, showInfo } = useToast();
+  const settings = useSettingsSelector((s) => s);
+  const confirmBeforeOpen = settings.confirmBeforeOpen;
+  const statusEnabled = settings.statusEnabled;
+  const statusCheckInterval = settings.statusCheckInterval || 60;
+
+  const { showSuccess, showInfo, showError } = useToast();
 
   useEffect(() => {
     const timer = setInterval(() => setNow(new Date()), 1000);
@@ -73,6 +86,58 @@ export function DashboardContent() {
     setCategoriesState(getCategories());
     setRecentNotes(getNotes().slice(0, 2));
   }, []);
+
+  const checkAppStatus = useCallback(async (app: AppType) => {
+    if (!statusEnabled || !app.statusEnabled) return;
+    setAppStatuses((prev) => ({ ...prev, [app.id]: "checking" }));
+    setStatusInfo((prev) => ({ ...prev, [app.id]: { status: "checking", lastChecked: Date.now(), latencyMs: 0 } }));
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 4000);
+
+    const startTime = Date.now();
+    try {
+      await fetch(app.url, { method: "HEAD", mode: "no-cors", signal: controller.signal, cache: "no-cache" });
+      clearTimeout(timeoutId);
+      const latency = Date.now() - startTime;
+      setAppStatuses((prev) => ({ ...prev, [app.id]: "reachable" }));
+      setStatusInfo((prev) => ({ ...prev, [app.id]: { status: "reachable", lastChecked: Date.now(), latencyMs: latency } }));
+    } catch {
+      clearTimeout(timeoutId);
+      const latency = Date.now() - startTime;
+      setAppStatuses((prev) => ({ ...prev, [app.id]: "unreachable" }));
+      setStatusInfo((prev) => ({ ...prev, [app.id]: { status: "unreachable", lastChecked: Date.now(), latencyMs: latency } }));
+    }
+  }, [statusEnabled]);
+
+  const checkAllStatuses = useCallback(() => {
+    const visibleApps = apps.filter((a) => !a.isHidden || showHiddenApps);
+    for (const app of visibleApps) {
+      checkAppStatus(app);
+    }
+  }, [apps, showHiddenApps, checkAppStatus]);
+
+  useEffect(() => {
+    if (statusEnabled && !initialStatusCheckDone.current) {
+      initialStatusCheckDone.current = true;
+      checkAllStatuses();
+    }
+    if (statusEnabled) {
+      const interval = setInterval(checkAllStatuses, statusCheckInterval * 1000);
+      statusCheckIntervalRef.current = interval;
+      return () => clearInterval(interval);
+    }
+  }, [statusEnabled, checkAllStatuses, statusCheckInterval]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && statusEnabled) {
+        checkAllStatuses();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [statusEnabled, checkAllStatuses]);
 
   // Keyboard shortcut / and Ctrl+K
   useEffect(() => {
@@ -93,15 +158,20 @@ export function DashboardContent() {
   const greetingText = getGreetingText(period, "");
 
   const filteredApps = useMemo(() => {
+    if (selectedCategory === "favorites") {
+      return filterApps(apps, searchQuery, null, showHiddenApps).filter((a) => a.isPinned);
+    }
     return filterApps(apps, searchQuery, selectedCategory, showHiddenApps);
   }, [apps, searchQuery, selectedCategory, showHiddenApps]);
 
-  const pinnedApps = useMemo(() => {
-    return sortAppsByOrder(filteredApps.filter((a) => a.isPinned));
-  }, [filteredApps]);
-
   const allAppsSorted = useMemo(() => {
-    return sortAppsByOrder(filteredApps);
+    const sorted = sortAppsByOrder(filteredApps);
+    // Sort pinned first
+    return sorted.sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return 0;
+    });
   }, [filteredApps]);
 
   // Most used computation
@@ -115,14 +185,24 @@ export function DashboardContent() {
   }, [appStatuses]);
 
   const handleOpenApp = (app: AppType, newTab: boolean) => {
-    setConfirmApp(app);
+    if (settings.confirmBeforeOpen) {
+      setConfirmApp(app);
+    } else {
+      handleConfirmOpen(app, newTab);
+    }
   };
 
-  const handleConfirmOpen = (app: AppType) => {
+  const handleConfirmOpen = (app: AppType, newTabOverride?: boolean) => {
     recordClick(app.id);
     loadData();
     setConfirmApp(null);
-    window.open(app.url, "_blank", "noopener,noreferrer");
+
+    const openInNewTab = newTabOverride ?? (settings.openLinksIn === "new-tab");
+    if (openInNewTab) {
+      window.open(app.url, "_blank", "noopener,noreferrer");
+    } else {
+      window.location.assign(app.url);
+    }
   };
 
   const handleTogglePin = (app: AppType) => {
@@ -132,6 +212,11 @@ export function DashboardContent() {
     setApps(updated);
     loadData();
     showInfo(app.isPinned ? strings.common.unpin : strings.common.pin);
+  };
+
+  const handleCopyLink = (url: string) => {
+    navigator.clipboard.writeText(url);
+    showSuccess("Link copied");
   };
 
   const handleToggleHidden = (app: AppType) => {
@@ -151,9 +236,47 @@ export function DashboardContent() {
     }
   };
 
-  const handleCopyLink = (url: string) => {
-    navigator.clipboard.writeText(url);
-    showSuccess(strings.toasts.linkCopied);
+  const handleExportData = () => {
+    try {
+      const data = exportAllData();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      const dateStr = new Date().toISOString().split("T")[0];
+      a.download = `vindeck-backup-${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showSuccess("Data exported successfully");
+    } catch {
+      showError("Failed to export data");
+    }
+  };
+
+  const handleImportData = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/json";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        const result = importAllData(data);
+        if (result.success) {
+          showSuccess("Data imported successfully");
+          loadData();
+        } else {
+          showError(result.error || "Failed to import data");
+        }
+      } catch {
+        showError("Invalid backup file");
+      }
+    };
+    input.click();
   };
 
   const handleSignOut = () => {
@@ -222,114 +345,45 @@ export function DashboardContent() {
         }}
         onOpenSettings={() => setIsSettingsOpen(true)}
         onSignOut={handleSignOut}
-        onOpenProfile={() => {}}
-        onOpenKeyboardShortcuts={() => {}}
-        onExportData={() => {}}
-        onImportData={() => {}}
-        profilePhoto={undefined}
-        profileName=""
-        theme="system"
-        onSetTheme={() => {}}
-        accentColor="blue"
-        onSetAccentColor={() => {}}
+        onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenKeyboardShortcuts={() => setIsShortcutsOpen(true)}
+        onExportData={handleExportData}
+        onImportData={handleImportData}
+        profilePhoto={settings.profilePhoto}
+        profileName={settings.profileName || settings.greetingName}
+        theme={settings.theme}
+        onSetTheme={(t) => {
+          const updated = { ...settings, theme: t };
+          setSettings(updated);
+          loadData();
+        }}
+        accentColor={settings.accentColor}
+        onSetAccentColor={(c) => {
+          const updated = { ...settings, accentColor: c as AccentColor };
+          setSettings(updated);
+          loadData();
+        }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
       />
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full space-y-8">
-        {/* Hero Section */}
-        <section className="space-y-2">
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight bg-gradient-to-r from-slate-100 via-indigo-200 to-purple-300 dark:from-white dark:to-slate-300 light:from-slate-900 light:to-indigo-950 bg-clip-text text-transparent">
-            {greetingText}
-          </h1>
-          <p className="text-sm text-slate-400 light:text-slate-600 font-medium">
-            {now ? formatDateTime(now) : "—"}
-          </p>
-        </section>
-
-        {/* Bento Grid (12 Columns) */}
-        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Apps Online */}
-          <div className="p-5 rounded-3xl bg-slate-900/60 light:bg-white/80 backdrop-blur-xl border border-slate-800/80 light:border-slate-200/80 shadow-md flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-400 light:text-slate-500 uppercase tracking-wider mb-1">
-                Apps Online
-              </p>
-              <h2 className="text-2xl font-bold text-slate-100 light:text-slate-900">
-                {onlineCount} / {apps.length}
-              </h2>
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center border border-emerald-500/20">
-              <Activity className="w-6 h-6" />
-            </div>
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-28 sm:pb-8 w-full space-y-4">
+        {/* Hero Section - Single row */}
+        <section className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100 light:text-slate-900 truncate">
+              {greetingText}
+            </h1>
+            <span className="hidden sm:inline text-xs text-slate-500 light:text-slate-500 font-medium">
+              {now ? formatDateTime(now) : "—"}
+            </span>
           </div>
-
-          {/* Recent Notes */}
-          <Link
-            href="/notes"
-            className="p-5 rounded-3xl bg-slate-900/60 light:bg-white/80 backdrop-blur-xl border border-slate-800/80 light:border-slate-200/80 shadow-md hover:border-indigo-500/50 transition-all group flex flex-col justify-between"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-slate-400 light:text-slate-500 uppercase tracking-wider">
-                Recent Notes
-              </p>
-              <FileText className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+          {apps.length > 0 && Object.keys(appStatuses).length > 0 && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800/60 light:bg-slate-100 border border-slate-700/40 light:border-slate-200 text-xs font-medium text-slate-300 light:text-slate-700 flex-shrink-0">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>{onlineCount}/{apps.length} online</span>
             </div>
-            {recentNotes.length > 0 ? (
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-slate-200 light:text-slate-800 truncate">
-                  {recentNotes[0].title}
-                </p>
-                <p className="text-xs text-slate-400 light:text-slate-500 line-clamp-1 font-mono">
-                  {recentNotes[0].content}
-                </p>
-              </div>
-            ) : (
-              <p className="text-xs text-slate-500 italic">No notes yet</p>
-            )}
-          </Link>
-
-          {/* Most Used */}
-          <div className="p-5 rounded-3xl bg-slate-900/60 light:bg-white/80 backdrop-blur-xl border border-slate-800/80 light:border-slate-200/80 shadow-md flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-slate-400 light:text-slate-500 uppercase tracking-wider mb-1">
-                Most Used
-              </p>
-              <h2 className="text-base font-bold text-slate-100 light:text-slate-900 truncate max-w-[140px]">
-                {mostUsedApp ? mostUsedApp.name : "—"}
-              </h2>
-              {mostUsedApp && (
-                <p className="text-[11px] text-slate-400 font-mono">
-                  {mostUsedApp.clickCount || 0} clicks
-                </p>
-              )}
-            </div>
-            <div className="w-12 h-12 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center border border-purple-500/20">
-              <Zap className="w-6 h-6" />
-            </div>
-          </div>
-
-          {/* Shortcuts */}
-          <div className="p-5 rounded-3xl bg-slate-900/60 light:bg-white/80 backdrop-blur-xl border border-slate-800/80 light:border-slate-200/80 shadow-md flex flex-col justify-between">
-            <p className="text-xs font-semibold text-slate-400 light:text-slate-500 uppercase tracking-wider mb-2">
-              Shortcuts
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setIsSearchOpen(true)}
-                type="button"
-                className="flex-1 py-1.5 px-2 rounded-xl bg-slate-800/60 light:bg-slate-100 text-xs font-medium text-slate-300 light:text-slate-700 hover:bg-slate-800 text-center"
-              >
-                ⌘K Search
-              </button>
-              <Link
-                href="/notes"
-                className="flex-1 py-1.5 px-2 rounded-xl bg-slate-800/60 light:bg-slate-100 text-xs font-medium text-slate-300 light:text-slate-700 hover:bg-slate-800 text-center"
-              >
-                Notes
-              </Link>
-            </div>
-          </div>
+          )}
         </section>
 
         {/* Toolbar Controls */}
@@ -344,53 +398,11 @@ export function DashboardContent() {
         />
 
         {/* Favorites Section */}
-        {pinnedApps.length > 0 && (
-          <section className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Pin className="w-4 h-4 text-amber-400" />
-              <h2 className="text-lg font-bold tracking-tight text-slate-200 light:text-slate-900">
-                {strings.home.sections.favorites}
-              </h2>
-            </div>
-            <div
-              className={
-                viewMode === "cards"
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
-                  : viewMode === "list"
-                  ? "space-y-3"
-                  : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"
-              }
-            >
-              {pinnedApps.map((app) => (
-                <AppCard
-                  key={app.id}
-                  app={app}
-                  viewMode={viewMode}
-                  isPinned={true}
-                  onOpen={handleOpenApp}
-                  onEdit={(a) => {
-                    setEditingApp(a);
-                    setIsAddAppOpen(true);
-                  }}
-                  onTogglePin={handleTogglePin}
-                  onToggleHidden={handleToggleHidden}
-                  onDelete={handleDeleteApp}
-                  onCopyLink={handleCopyLink}
-                  status={appStatuses[app.id] ?? null}
-                  checking={false}
-                  openInNewTabDefault={true}
-                  accentColor={app.accentColor}
-                />
-              ))}
-            </div>
-          </section>
-        )}
-
         {/* All Apps Section */}
-        <section className="space-y-4">
+        <section className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold tracking-tight text-slate-200 light:text-slate-900">
-              {strings.home.sections.allApps}
+            <h2 className="text-base font-bold tracking-tight text-slate-200 light:text-slate-900">
+              All Apps
             </h2>
             <span className="text-xs text-slate-500 font-mono">
               {allAppsSorted.length} {allAppsSorted.length === 1 ? "app" : "apps"}
@@ -398,18 +410,18 @@ export function DashboardContent() {
           </div>
 
           {allAppsSorted.length === 0 ? (
-            <div className="p-12 text-center rounded-3xl bg-slate-900/40 border border-slate-800/60">
-              <p className="text-slate-400 text-sm font-medium">{strings.home.sections.noApps}</p>
-              <p className="text-slate-600 text-xs mt-1">{strings.home.sections.noAppsDesc}</p>
+            <div className="p-8 text-center rounded-2xl bg-slate-900/40 border border-slate-800/60">
+              <p className="text-slate-400 text-sm font-medium">No apps found</p>
+              <p className="text-slate-600 text-xs mt-1">Try changing your search or category filter</p>
             </div>
           ) : (
             <div
               className={
                 viewMode === "cards"
-                  ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4"
+                  ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
                   : viewMode === "list"
-                  ? "space-y-3"
-                  : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3"
+                  ? "space-y-2"
+                  : "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2"
               }
             >
               {allAppsSorted.map((app) => (
@@ -428,8 +440,8 @@ export function DashboardContent() {
                   onDelete={handleDeleteApp}
                   onCopyLink={handleCopyLink}
                   status={appStatuses[app.id] ?? null}
-                  checking={false}
-                  openInNewTabDefault={true}
+                  statusInfo={statusInfo[app.id] ?? null}
+                  openInNewTabDefault={settings.openLinksIn === "new-tab"}
                   accentColor={app.accentColor}
                 />
               ))}
@@ -462,18 +474,31 @@ export function DashboardContent() {
             setIsSettingsOpen(true);
           }}
           onLogout={handleSignOut}
-          currentTheme={theme}
-          onSetTheme={() => {}}
+          onOpenShortcuts={() => {
+            setIsSearchOpen(false);
+            setIsShortcutsOpen(true);
+          }}
+          currentTheme={settings.theme}
+          onSetTheme={(t) => {
+            const updated = { ...settings, theme: t };
+            setSettings(updated);
+            loadData();
+          }}
           currentViewMode={viewMode}
           onSetViewMode={setViewMode}
-          currentAccent="blue"
-          onSetAccent={() => {}}
+          currentAccent={settings.accentColor}
+          onSetAccent={(c) => {
+            const updated = { ...settings, accentColor: c };
+            setSettings(updated);
+            loadData();
+          }}
           categories={categories.map((c) => c.name)}
         />
       )}
 
       {isAddAppOpen && (
         <AppForm
+          key={editingApp?.id || "new"}
           isOpen={isAddAppOpen}
           initialData={editingApp}
           categories={categories}
@@ -483,19 +508,23 @@ export function DashboardContent() {
         />
       )}
 
-      {isSettingsOpen && (
-        <SettingsDialog
-          isOpen={isSettingsOpen}
-          settings={getSettings()}
-          categories={categories}
-          hiddenBuiltInApps={getHiddenBuiltInApps()}
-          onClose={() => setIsSettingsOpen(false)}
-          onSettingsChange={(newSettings) => {
-            setSettings({ ...getSettings(), ...newSettings });
-            loadData();
-          }}
-          onCategoriesChange={(newCats) => {
-            setCategories(newCats);
+      {isShortcutsOpen && (
+        <KeyboardShortcutsDialog
+          isOpen={isShortcutsOpen}
+          onClose={() => setIsShortcutsOpen(false)}
+        />
+      )}
+
+      {isProfileOpen && (
+        <ProfileDialog
+          key={settings.profileName}
+          isOpen={isProfileOpen}
+          onClose={() => setIsProfileOpen(false)}
+          currentName={settings.profileName || settings.greetingName}
+          currentPhoto={settings.profilePhoto || ""}
+          onSave={(name, photo) => {
+            const updated = { ...settings, profileName: name, greetingName: name, profilePhoto: photo };
+            setSettings(updated);
             loadData();
           }}
         />
