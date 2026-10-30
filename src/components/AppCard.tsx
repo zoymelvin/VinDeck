@@ -22,9 +22,10 @@ interface AppCardProps {
   onToggleHidden: (app: AppType) => void;
   onDelete: (app: AppType) => void;
   onCopyLink: (url: string) => void;
-  status: "checking" | "reachable" | "unreachable" | null;
-  statusInfo?: StatusInfo | null;
-  checking?: boolean;
+  onStatusChange?: (appId: string, reachable: boolean | null) => void;
+  status: "checking" | "reachable" | "unreachable" | "unsupported" | null;
+  statusInfo?: { status: "checking" | "reachable" | "unreachable" | "unsupported"; lastChecked: number; latencyMs: number; reason?: string; method: string } | null;
+  checking: boolean;
   openInNewTabDefault: boolean;
   accentColor: AccentColor;
 }
@@ -33,12 +34,14 @@ const STATUS_COLORS = {
   checking: "text-amber-500 dark:text-amber-400",
   reachable: "text-emerald-600 dark:text-emerald-400",
   unreachable: "text-rose-600 dark:text-rose-400",
+  unsupported: "text-slate-500 dark:text-slate-400",
 };
 
 const STATUS_LABELS = {
-  checking: "Checking…",
-  reachable: "Online",
-  unreachable: "Offline",
+  checking: strings.status.checking,
+  reachable: strings.status.online,
+  unreachable: strings.status.offline,
+  unsupported: "Unsupported",
 };
 
 function extractHostname(url: string): string {

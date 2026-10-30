@@ -25,6 +25,7 @@ export interface App {
   isHidden: boolean;
   isPinned: boolean;
   statusEnabled: boolean;
+  statusUrl?: string;
   sortOrder: number;
   clickCount: number;
   lastOpened: number | null;

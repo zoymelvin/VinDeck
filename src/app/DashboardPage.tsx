@@ -57,9 +57,9 @@ export function DashboardContent() {
   const [editingApp, setEditingApp] = useState<AppType | null>(null);
   const [confirmApp, setConfirmApp] = useState<AppType | null>(null);
 
-  // App statuses
-  const [appStatuses, setAppStatuses] = useState<Record<string, "checking" | "reachable" | "unreachable" | null>>({});
-  const [statusInfo, setStatusInfo] = useState<Record<string, { status: "checking" | "reachable" | "unreachable"; lastChecked: number; latencyMs: number } | null>>({});
+  // App statuses - using server-side API
+  const [appStatuses, setAppStatuses] = useState<Record<string, "checking" | "reachable" | "unreachable" | "unsupported" | null>>({});
+  const [statusInfo, setStatusInfo] = useState<Record<string, { status: "checking" | "reachable" | "unreachable" | "unsupported"; lastChecked: number; latencyMs: number; reason?: string; method: string } | null>>({});
   const statusCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const initialStatusCheckDone = useRef(false);
 
@@ -85,37 +85,105 @@ export function DashboardContent() {
     setAppsState(getApps());
     setCategoriesState(getCategories());
     setRecentNotes(getNotes().slice(0, 2));
-  }, []);
+}, []);
 
-  const checkAppStatus = useCallback(async (app: AppType) => {
-    if (!statusEnabled || !app.statusEnabled) return;
-    setAppStatuses((prev) => ({ ...prev, [app.id]: "checking" }));
-    setStatusInfo((prev) => ({ ...prev, [app.id]: { status: "checking", lastChecked: Date.now(), latencyMs: 0 } }));
+  // Server-side status checking
+  const checkAllStatuses = useCallback(async () => {
+    if (!statusEnabled) return;
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
-
-    const startTime = Date.now();
-    try {
-      await fetch(app.url, { method: "HEAD", mode: "no-cors", signal: controller.signal, cache: "no-cache" });
-      clearTimeout(timeoutId);
-      const latency = Date.now() - startTime;
-      setAppStatuses((prev) => ({ ...prev, [app.id]: "reachable" }));
-      setStatusInfo((prev) => ({ ...prev, [app.id]: { status: "reachable", lastChecked: Date.now(), latencyMs: latency } }));
-    } catch {
-      clearTimeout(timeoutId);
-      const latency = Date.now() - startTime;
-      setAppStatuses((prev) => ({ ...prev, [app.id]: "unreachable" }));
-      setStatusInfo((prev) => ({ ...prev, [app.id]: { status: "unreachable", lastChecked: Date.now(), latencyMs: latency } }));
-    }
-  }, [statusEnabled]);
-
-  const checkAllStatuses = useCallback(() => {
     const visibleApps = apps.filter((a) => !a.isHidden || showHiddenApps);
-    for (const app of visibleApps) {
-      checkAppStatus(app);
+    const urls = visibleApps.map((app): { id: string; url: string } => ({ id: app.id, url: app.statusUrl || app.url }));
+
+    if (urls.length === 0) return;
+
+    // Set all to checking initially
+    setAppStatuses((prev) => {
+      const next = { ...prev };
+      urls.forEach(({ id }) => {
+        next[id] = "checking";
+      });
+      return next;
+    });
+    setStatusInfo((prev) => {
+      const next = { ...prev };
+      urls.forEach(({ id }) => {
+        next[id] = { status: "checking", lastChecked: Date.now(), latencyMs: 0, method: "server" };
+      });
+      return next;
+    });
+
+    try {
+      const response = await fetch("/api/status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: urls }),
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Status check failed");
+      }
+
+      interface StatusResult {
+        id: string;
+        state: "checking" | "reachable" | "unreachable" | "unsupported";
+        httpStatus: number | null;
+        latencyMs: number;
+        reason?: string;
+        method: string;
+        checkedAt: string;
+      }
+
+      const results: StatusResult[] = await response.json();
+
+      setAppStatuses((prev) => {
+        const next = { ...prev };
+        results.forEach((result: StatusResult) => {
+          next[result.id] = result.state;
+        });
+        return next;
+      });
+      setStatusInfo((prev) => {
+        const next = { ...prev };
+        results.forEach((result: StatusResult) => {
+          next[result.id] = {
+            status: result.state,
+            lastChecked: Date.now(),
+            latencyMs: result.latencyMs,
+            reason: result.reason,
+            method: result.method,
+          };
+        });
+        return next;
+      });
+    } catch (error) {
+      // Fallback to browser-side check for unsupported URLs
+      console.warn("Server-side status check failed, falling back to browser check:", error);
+      const visibleApps = apps.filter((a) => !a.isHidden || showHiddenApps);
+      for (const app of visibleApps) {
+        // Fallback to browser check
+        setAppStatuses((prev) => ({ ...prev, [app.id]: "checking" }));
+        setStatusInfo((prev) => ({ ...prev, [app.id]: { status: "checking", lastChecked: Date.now(), latencyMs: 0, method: "browser" } }));
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const startTime = Date.now();
+
+        try {
+          await fetch(app.url, { method: "HEAD", mode: "no-cors", signal: controller.signal, cache: "no-cache" });
+          clearTimeout(timeoutId);
+          const latency = Date.now() - startTime;
+          setAppStatuses((prev) => ({ ...prev, [app.id]: "reachable" }));
+          setStatusInfo((prev) => ({ ...prev, [app.id]: { status: "reachable", lastChecked: Date.now(), latencyMs: latency, method: "browser" } }));
+        } catch {
+          clearTimeout(timeoutId);
+          const latency = Date.now() - startTime;
+          setAppStatuses((prev) => ({ ...prev, [app.id]: "unreachable" }));
+          setStatusInfo((prev) => ({ ...prev, [app.id]: { status: "unreachable", lastChecked: Date.now(), latencyMs: latency, method: "browser" } }));
+        }
+      }
     }
-  }, [apps, showHiddenApps, checkAppStatus]);
+  }, [apps, showHiddenApps, statusEnabled]);
 
   useEffect(() => {
     if (statusEnabled && !initialStatusCheckDone.current) {
@@ -433,6 +501,7 @@ export function DashboardContent() {
                   onCopyLink={handleCopyLink}
                   status={appStatuses[app.id] ?? null}
                   statusInfo={statusInfo[app.id] ?? null}
+                  checking={appStatuses[app.id] === "checking"}
                   openInNewTabDefault={settings.openLinksIn === "new-tab"}
                   accentColor={app.accentColor}
                 />
