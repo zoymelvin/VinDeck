@@ -16,6 +16,7 @@
     "lucide-react": "^1.63.0",
     "motion": "^14.7.1",
     "next": "16.4.3",
+    "postgres": "^4.0.0",
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
