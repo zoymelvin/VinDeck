@@ -97,15 +97,17 @@ describe("auth - rate limiting", () => {
     clearRateLimit("192.168.1.2");
   });
 
-  it("allows first 5 attempts", () => {
-    for (let i = 0; i < 5; i++) {
+  const MAX_ATTEMPTS = process.env.NODE_ENV === "production" ? 5 : 100;
+
+  it("allows first attempts", () => {
+    for (let i = 0; i < MAX_ATTEMPTS; i++) {
       const result = checkRateLimit("192.168.1.1");
       expect(result.allowed).toBe(true);
     }
   });
 
-  it("blocks 6th attempt", () => {
-    for (let i = 0; i < 5; i++) {
+  it("blocks next attempt", () => {
+    for (let i = 0; i < MAX_ATTEMPTS; i++) {
       checkRateLimit("192.168.1.1");
     }
     const result = checkRateLimit("192.168.1.1");
@@ -114,7 +116,7 @@ describe("auth - rate limiting", () => {
   });
 
   it("tracks IPs separately", () => {
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < MAX_ATTEMPTS; i++) {
       checkRateLimit("192.168.1.1");
     }
     const result = checkRateLimit("192.168.1.2");

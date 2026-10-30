@@ -15,14 +15,15 @@ export interface App {
   description: string;
   url: string;
   icon: string;
-  iconType: "emoji" | "lucide";
+  iconType: "emoji" | "lucide" | "image" | "url";
+  iconSrc?: string;
+  iconCustomized?: boolean;
   accentColor: AccentColor;
   category: string;
   tags: string[];
   isBuiltIn: boolean;
   isHidden: boolean;
   isPinned: boolean;
-  statusEnabled: boolean;
   sortOrder: number;
   clickCount: number;
   lastOpened: number | null;
@@ -41,10 +42,14 @@ export interface UserSettings {
   greetingName: string;
   dashboardTitle: string;
   theme: ThemeMode;
-  accentColor: AccentColor;
   viewMode: ViewMode;
   openInNewTab: boolean;
-  statusEnabled: boolean;
+  openLinksIn: "same-tab" | "new-tab";
+  confirmBeforeOpen: boolean;
+  animations: "full" | "reduced" | "follow";
+  backgroundEffects: boolean;
+  profilePhoto?: string;
+  profileName?: string;
   schemaVersion: number;
 }
 
@@ -73,21 +78,25 @@ export interface SessionPayload {
 }
 
 export const DEFAULT_SETTINGS: UserSettings = {
-  greetingName: "Pengguna",
+  greetingName: "",
   dashboardTitle: "VinDeck",
   theme: "system",
-  accentColor: "blue",
   viewMode: "cards",
-  openInNewTab: true,
-  statusEnabled: true,
-  schemaVersion: 1,
+  openInNewTab: false,
+  openLinksIn: "same-tab",
+  confirmBeforeOpen: true,
+  animations: "full",
+  backgroundEffects: true,
+  profilePhoto: "",
+  profileName: "",
+  schemaVersion: 5,
 };
 
 export const BUILT_IN_CATEGORIES: Category[] = [
   { id: "media", name: "Media", isBuiltIn: true, sortOrder: 1 },
-  { id: "security", name: "Keamanan", isBuiltIn: true, sortOrder: 2 },
-  { id: "system", name: "Sistem", isBuiltIn: true, sortOrder: 3 },
-  { id: "files", name: "File", isBuiltIn: true, sortOrder: 4 },
+  { id: "security", name: "Security", isBuiltIn: true, sortOrder: 2 },
+  { id: "system", name: "System", isBuiltIn: true, sortOrder: 3 },
+  { id: "files", name: "Files", isBuiltIn: true, sortOrder: 4 },
 ];
 
 export const LUCIDE_ICONS = [
@@ -134,7 +143,6 @@ export const LUCIDE_ICONS = [
   "Zap",
   "Battery",
   "Plug",
-  "Cpu",
   "Activity",
   "Heart",
   "Stethoscope",
@@ -152,7 +160,6 @@ export const LUCIDE_ICONS = [
   "MapPin",
   "Navigation",
   "Map",
-  "Globe",
   "Earth",
   "Sun",
   "Moon",
@@ -165,11 +172,7 @@ export const LUCIDE_ICONS = [
   "Umbrella",
   "Thermometer",
   "Gauge",
-  "Speedometer",
-  "Clock",
-  "Calendar",
   "Timer",
-  "Stopwatch",
   "AlarmClock",
   "Hourglass",
   "Bell",
@@ -205,8 +208,6 @@ export const LUCIDE_ICONS = [
   "Cog",
   "Wrench",
   "Hammer",
-  "Screwdriver",
-  "Tool",
   "Scissors",
   "Pen",
   "Edit",
@@ -221,7 +222,6 @@ export const LUCIDE_ICONS = [
   "Upload",
   "Share",
   "Share2",
-  "Link",
   "Unlink",
   "Lock",
   "Unlock",
@@ -234,13 +234,11 @@ export const LUCIDE_ICONS = [
   "UserX",
   "Users",
   "Group",
-  "Team",
   "Briefcase",
   "Folder",
   "FolderOpen",
   "FolderPlus",
   "FolderMinus",
-  "File",
   "FilePlus",
   "FileMinus",
   "FileText",
@@ -250,16 +248,9 @@ export const LUCIDE_ICONS = [
   "FileVideo",
   "FileAudio",
   "FileSpreadsheet",
-  "FilePresentation",
-  "FilePdf",
+  "Presentation",
   "FileArchive",
   "FileJson",
-  "FileCsv",
-  "FileXml",
-  "FileYaml",
-  "FileToml",
-  "FileIni",
-  "FileLog",
   "FileLock",
   "FileKey",
   "FileSignature",
@@ -269,26 +260,15 @@ export const LUCIDE_ICONS = [
   "FileCheck",
   "FileX",
   "FileHeart",
-  "FileStar",
-  "FileTag",
   "FileUser",
   "FileCog",
   "FileTerminal",
-  "FileCode2",
-  "FileCode3",
-  "FileCode4",
-  "FileCode5",
-  "FileCode6",
-  "FileCode7",
-  "FileCode8",
-  "FileCode9",
-  "FileCode10",
 ] as const;
 
 export type LucideIconName = (typeof LUCIDE_ICONS)[number];
 
 export const ACCENT_COLORS: { value: AccentColor; label: string; cssVar: string }[] = [
-  { value: "blue", label: "Biru", cssVar: "--color-blue-500" },
+  { value: "blue", label: "Blue", cssVar: "--color-blue-500" },
   { value: "indigo", label: "Indigo", cssVar: "--color-indigo-500" },
   { value: "violet", label: "Violet", cssVar: "--color-violet-500" },
   { value: "pink", label: "Pink", cssVar: "--color-pink-500" },

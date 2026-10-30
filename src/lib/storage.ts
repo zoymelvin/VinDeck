@@ -3,16 +3,27 @@ import { DEFAULT_SETTINGS, BUILT_IN_CATEGORIES } from "./types";
 import { BUILT_IN_APPS } from "./defaults";
 import { isValidUrl } from "./validation";
 
+interface LegacyApp extends Omit<App, "statusEnabled" | "statusUrl"> {
+  statusEnabled?: boolean;
+  statusUrl?: string;
+}
+
+interface LegacySettings extends Omit<UserSettings, "statusEnabled" | "statusDisplay" | "statusCheckInterval"> {
+  statusEnabled?: boolean;
+  statusDisplay?: "simple" | "live" | "off";
+  statusCheckInterval?: number;
+}
+
 const STORAGE_KEYS = {
   apps: "vindeck_apps",
   categories: "vindeck_categories",
-  settings: "vindeck_settings",
+  settings: "vindeck_settings_v2",
   clickTracking: "vindeck_clicks",
   quickNotes: "vindeck_notes",
   schemaVersion: "vindeck_schema_version",
 } as const;
 
-const CURRENT_SCHEMA_VERSION = 1;
+const CURRENT_SCHEMA_VERSION = 5;
 
 function safeGet<T>(key: string, fallback: T): T {
   if (typeof window !== "undefined" && typeof localStorage === "undefined") return fallback;
@@ -70,7 +81,77 @@ export function migrateIfNeeded(): void {
     safeSet(STORAGE_KEYS.clickTracking, existingClicks);
     safeSet(STORAGE_KEYS.quickNotes, existingNotes);
     setSchemaVersion(CURRENT_SCHEMA_VERSION);
+  } else if (currentVersion === 1 || currentVersion === 2) {
+    // Migrate from v1/v2 to v3: update built-in apps with PNG icons and English descriptions
+    const existingApps = safeGet<App[]>(STORAGE_KEYS.apps, []);
+    const existingCategories = safeGet<Category[]>(STORAGE_KEYS.categories, []);
+    const existingSettings = safeGet<UserSettings>(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
+
+    const mergedApps = mergeAppsV3(existingApps);
+    const mergedCategories = migrateCategoriesV3(existingCategories);
+    const mergedSettings = { ...DEFAULT_SETTINGS, ...existingSettings, schemaVersion: CURRENT_SCHEMA_VERSION };
+
+    safeSet(STORAGE_KEYS.apps, mergedApps);
+    safeSet(STORAGE_KEYS.categories, mergedCategories);
+    safeSet(STORAGE_KEYS.settings, mergedSettings);
+    setSchemaVersion(CURRENT_SCHEMA_VERSION);
+  } else if (currentVersion === 3 || currentVersion === 4) {
+    const existingApps = safeGet<LegacyApp[]>(STORAGE_KEYS.apps, []);
+    const existingSettings = safeGet<LegacySettings>(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
+
+    const cleanedApps = existingApps.map(({ statusEnabled, statusUrl, ...rest }) => rest);
+    const { statusEnabled: _s1, statusDisplay: _s2, statusCheckInterval: _s3, ...restSettings } = existingSettings;
+    const cleanedSettings = { ...restSettings, schemaVersion: CURRENT_SCHEMA_VERSION };
+
+    safeSet(STORAGE_KEYS.apps, cleanedApps);
+    safeSet(STORAGE_KEYS.settings, cleanedSettings);
+    setSchemaVersion(CURRENT_SCHEMA_VERSION);
   }
+}
+
+function mergeAppsV3(existing: App[]): App[] {
+  const builtInMap = new Map(BUILT_IN_APPS.map((a) => [a.id, a]));
+  const result: App[] = [];
+
+  for (const app of existing) {
+    const builtIn = builtInMap.get(app.id);
+    if (builtIn && !app.iconCustomized) {
+      // Migrate built-in app: update icon and description if not customized
+      result.push({
+        ...builtIn,
+        isHidden: app.isHidden,
+        isPinned: app.isPinned,
+        sortOrder: app.sortOrder,
+        clickCount: app.clickCount,
+        lastOpened: app.lastOpened,
+        createdAt: app.createdAt,
+        updatedAt: Date.now(),
+      });
+    } else {
+      result.push(app);
+    }
+  }
+
+  // Add any new built-in apps
+  for (const builtIn of BUILT_IN_APPS) {
+    if (!existing.some((a) => a.id === builtIn.id)) {
+      result.push(builtIn);
+    }
+  }
+
+  return result;
+}
+
+function migrateCategoriesV3(existing: Category[]): Category[] {
+  const categoryMap: Record<string, string> = {
+    "Keamanan": "Security",
+    "Sistem": "System",
+    "File": "Files",
+  };
+  return existing.map((cat) => ({
+    ...cat,
+    name: categoryMap[cat.name] || cat.name,
+  }));
 }
 
 function mergeApps(builtIn: App[], existing: App[]): App[] {
@@ -154,6 +235,9 @@ export function getSettings(): UserSettings {
 
 export function setSettings(settings: UserSettings): void {
   safeSet(STORAGE_KEYS.settings, { ...settings, schemaVersion: CURRENT_SCHEMA_VERSION });
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("vindeck-settings-changed"));
+  }
 }
 
 export function getClickTracking(): ClickTracking {
@@ -200,21 +284,21 @@ export function exportAllData(): ExportData {
 export function importAllData(data: ExportData): { success: boolean; error?: string } {
   try {
     if (!data || typeof data !== "object") {
-      return { success: false, error: "Data tidak valid" };
+      return { success: false, error: "Invalid data" };
     }
     if (data.schemaVersion !== CURRENT_SCHEMA_VERSION) {
-      return { success: false, error: `Versi skema tidak didukung: ${data.schemaVersion}` };
+      return { success: false, error: `Schema version not supported: ${data.schemaVersion}` };
     }
     if (!Array.isArray(data.apps) || !Array.isArray(data.categories) || !data.settings) {
-      return { success: false, error: "Struktur data tidak lengkap" };
+      return { success: false, error: "Incomplete data structure" };
     }
 
     for (const app of data.apps) {
       if (!app.id || !app.name || !app.url) {
-        return { success: false, error: "Aplikasi tidak valid: field wajib hilang" };
+        return { success: false, error: "Invalid app: required fields missing" };
       }
       if (!isValidUrl(app.url)) {
-        return { success: false, error: `URL tidak valid: ${app.url}` };
+        return { success: false, error: `Invalid URL: ${app.url}` };
       }
     }
 
@@ -225,7 +309,7 @@ export function importAllData(data: ExportData): { success: boolean; error?: str
     setClickTracking({});
     return { success: true };
   } catch (e) {
-    return { success: false, error: "Gagal memproses impor" };
+    return { success: false, error: "Failed to process import" };
   }
 }
 
