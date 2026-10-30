@@ -17,7 +17,12 @@ import {
   Keyboard,
   Download,
   Upload,
+  ArrowLeft,
+  RotateCcw,
+  Wifi,
 } from "@/components/icons";
+import { Toolbar } from "@/components/Toolbar";
+import { strings } from "@/lib/strings";
 
 interface HeaderProps {
   onOpenSearch: () => void;
@@ -34,6 +39,9 @@ interface HeaderProps {
   onSetTheme: (theme: "light" | "dark" | "system") => void;
   searchQuery?: string;
   setSearchQuery?: (query: string) => void;
+  onlineCount?: number;
+  totalApps?: number;
+  isStatusChecking?: boolean;
 }
 
 export function Header({
@@ -49,6 +57,11 @@ export function Header({
   profileName,
   theme,
   onSetTheme,
+  searchQuery,
+  setSearchQuery,
+  onlineCount = 0,
+  totalApps = 0,
+  isStatusChecking = false,
 }: HeaderProps) {
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -97,7 +110,7 @@ export function Header({
   return (
     <>
       {/* Desktop & Tablet Floating Glass Header */}
-      <header className="sticky top-3 z-40 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full transition-all duration-300">
+      <header className="sticky top-3 z-40 px-4 sm:px-6 lg:px-8 max-w-[1760px] mx-auto w-full transition-all duration-300 hidden sm:block">
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -303,7 +316,99 @@ export function Header({
         </motion.div>
       </header>
 
-      {/* Mobile Floating Bottom Dock (< 640px) */}
+      {/* Mobile Header & Hero */}
+      <div className="sm:hidden">
+        {/* Mobile Header Capsule */}
+        <header className="sticky top-3 z-40 px-4 max-w-[1760px] mx-auto w-full">
+          <div className="relative flex items-center justify-between px-4 rounded-3xl transition-all duration-300 h-14 bg-white/80 dark:bg-slate-900/80 backdrop-blur-2xl border border-slate-200 dark:border-slate-700/50 shadow-lg">
+            {/* Left: Avatar + Brand */}
+            <div className="flex items-center gap-2">
+              {profilePhoto ? (
+                <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-indigo-500/40 shadow-md shadow-indigo-500/20">
+                  <img src={profilePhoto} alt={profileName || "Profile"} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                </div>
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md shadow-indigo-500/20">
+                  {getInitials(profileName || "")}
+                </div>
+              )}
+              <span className="font-bold text-base tracking-tight bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300 bg-clip-text text-transparent">
+                VinDeck
+              </span>
+            </div>
+
+            {/* Right: Sync Status */}
+            <div className="flex items-center gap-2">
+              {isStatusChecking ? (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 text-xs font-medium text-amber-700 dark:text-amber-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <span>Checking…</span>
+                </span>
+              ) : totalApps > 0 ? (
+                <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-700 dark:text-slate-300 shadow-sm">
+                  <span className={`w-1.5 h-1.5 rounded-full ${onlineCount === totalApps ? "bg-emerald-500" : "bg-rose-500"} animate-pulse`} />
+                  <span>{onlineCount}/{totalApps} online</span>
+                </span>
+              ) : null}
+            </div>
+          </div>
+        </header>
+
+        {/* Hero Row */}
+        <div className="px-4 py-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate">
+                {(() => {
+                  const hour = new Date().getHours();
+                  if (hour >= 5 && hour < 12) return "Good morning";
+                  if (hour >= 12 && hour < 17) return "Good afternoon";
+                  return "Good evening";
+                })()}
+                {profileName && <span className="text-slate-700 dark:text-slate-300 ml-1">, {profileName}</span>}
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="hidden sm:inline text-xs text-slate-500 dark:text-slate-500 font-medium tabular-nums">
+                {new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Search Bar */}
+        <div className="px-4 pb-2">
+          <button
+            onClick={onOpenSearch}
+            type="button"
+            className="w-full flex items-center justify-between px-4 py-2.5 text-sm rounded-2xl bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/40 text-slate-600 dark:text-slate-400 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            aria-label="Search apps"
+          >
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Search className="w-4 h-4 text-slate-400" />
+              <span className="truncate">Search apps…</span>
+            </div>
+            <div className="flex items-center gap-1 font-mono text-[11px] px-2 py-0.5 rounded-lg bg-white dark:bg-slate-900/60 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700/50 shadow-2xs">
+              <span>/</span>
+              <span>or</span>
+              <span>⌘K</span>
+            </div>
+          </button>
+        </div>
+
+        {/* Category Chips */}
+        <div className="px-4 pb-2">
+          <Toolbar
+            viewMode="cards"
+            onViewModeChange={() => {}}
+            selectedCategory={null}
+            onSelectCategory={() => {}}
+            categories={[]}
+          />
+        </div>
+      </div>
+
+      {/* Mobile Floating Bottom Dock */}
       <div className="fixed bottom-4 inset-x-4 z-40 sm:hidden pb-[env(safe-area-inset-bottom)]">
         <div className="mx-auto max-w-md bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-2 flex items-center justify-around">
           <Link
@@ -345,23 +450,28 @@ export function Header({
             <span className="text-[10px] font-medium">Notes</span>
           </Link>
 
-          {/* Profile Button */}
+          {/* Settings Button */}
           <button
-            onClick={() => setIsUserMenuOpen(true)}
+            onClick={onOpenSettings}
             type="button"
             className="flex flex-col items-center gap-1 p-2 rounded-2xl text-slate-600 dark:text-slate-400"
           >
-            {profilePhoto ? (
-              <div className="w-5 h-5 rounded-full overflow-hidden">
-                <img src={profilePhoto} alt="Profile" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-              </div>
-            ) : (
-              <User className="w-5 h-5" />
-            )}
-            <span className="text-[10px] font-medium">Profile</span>
+            <Settings className="w-5 h-5" />
+            <span className="text-[10px] font-medium">Settings</span>
           </button>
         </div>
       </div>
     </>
   );
 }
+
+function getInitials(name: string) {
+  if (!name) return "V";
+  const words = name.trim().split(/\s+/);
+  if (words.length >= 2) {
+    return (words[0][0] + words[1][0]).toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+}
+
+export default Header;
