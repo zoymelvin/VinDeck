@@ -32,8 +32,6 @@ interface HeaderProps {
   profileName?: string;
   theme: "light" | "dark" | "system";
   onSetTheme: (theme: "light" | "dark" | "system") => void;
-  accentColor: string;
-  onSetAccentColor: (color: string) => void;
   searchQuery?: string;
   setSearchQuery?: (query: string) => void;
 }
@@ -51,8 +49,6 @@ export function Header({
   profileName,
   theme,
   onSetTheme,
-  accentColor,
-  onSetAccentColor,
 }: HeaderProps) {
   const pathname = usePathname();
   const [isScrolled, setIsScrolled] = useState(false);
@@ -97,16 +93,6 @@ export function Header({
     }
     return name.slice(0, 2).toUpperCase();
   };
-
-  const accentColors = [
-    { value: "blue", color: "#3b82f6" },
-    { value: "indigo", color: "#6366f1" },
-    { value: "violet", color: "#8b5cf6" },
-    { value: "pink", color: "#ec4899" },
-    { value: "rose", color: "#f43f5e" },
-    { value: "amber", color: "#f59e0b" },
-    { value: "emerald", color: "#10b981" },
-  ];
 
   return (
     <>
@@ -248,27 +234,6 @@ export function Header({
                           {t === "system" && <Settings className="w-3.5 h-3.5" />}
                           <span className="capitalize">{t}</span>
                         </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Accent Color */}
-                  <div className="px-3 py-2">
-                    <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Accent Color</p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {accentColors.map((ac) => (
-                        <button
-                          key={ac.value}
-                          onClick={() => onSetAccentColor(ac.value)}
-                          type="button"
-                          className={`w-7 h-7 rounded-full border-2 transition-all ${
-                            accentColor === ac.value
-                              ? "border-slate-900 dark:border-white scale-110 shadow-md"
-                              : "border-transparent hover:scale-105"
-                          }`}
-                          style={{ backgroundColor: ac.color }}
-                          aria-label={ac.value}
-                        />
                       ))}
                     </div>
                   </div>

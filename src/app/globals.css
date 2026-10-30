@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+@custom-variant light (&:where([data-theme="light"], [data-theme="light"] *));
 
 @theme inline {
   --color-background: var(--bg-primary);
@@ -21,7 +22,7 @@
   --font-mono: var(--font-jetbrains-mono), monospace;
 }
 
-:root {
+:root[data-theme="light"] {
   --bg-primary: #f1f5f9;
   --bg-secondary: #ffffff;
   --bg-tertiary: #f8fafc;
@@ -70,8 +71,7 @@
   --mesh-orb4: rgba(16, 185, 129, 0.04);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
+:root[data-theme="dark"] {
     --bg-primary: #0f172a;
     --bg-secondary: #111827;
     --bg-tertiary: #1e293b;

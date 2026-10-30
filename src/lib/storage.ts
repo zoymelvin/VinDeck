@@ -12,7 +12,7 @@ const STORAGE_KEYS = {
   schemaVersion: "vindeck_schema_version",
 } as const;
 
-const CURRENT_SCHEMA_VERSION = 3;
+const CURRENT_SCHEMA_VERSION = 4;
 
 function safeGet<T>(key: string, fallback: T): T {
   if (typeof window !== "undefined" && typeof localStorage === "undefined") return fallback;
@@ -214,6 +214,9 @@ export function getSettings(): UserSettings {
 
 export function setSettings(settings: UserSettings): void {
   safeSet(STORAGE_KEYS.settings, { ...settings, schemaVersion: CURRENT_SCHEMA_VERSION });
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("vindeck-settings-changed"));
+  }
 }
 
 export function getClickTracking(): ClickTracking {

@@ -198,7 +198,6 @@ describe("import/export validation", () => {
       greetingName: "Test",
       dashboardTitle: "Test",
       theme: "system",
-      accentColor: "blue",
       viewMode: "cards",
       openInNewTab: false,
       openLinksIn: "same-tab",
@@ -209,11 +208,11 @@ describe("import/export validation", () => {
       backgroundEffects: true,
       profilePhoto: "",
       profileName: "",
-      schemaVersion: 3,
+      schemaVersion: 4,
     },
     quickNotes: "",
     exportedAt: Date.now(),
-    schemaVersion: 3,
+    schemaVersion: 4,
   };
 
   it("rejects invalid schema version", () => {
@@ -232,7 +231,7 @@ describe("import/export validation", () => {
   it("rejects invalid app URL", () => {
     const badData = {
       ...validExportData,
-      schemaVersion: 3,
+      schemaVersion: 4,
       apps: [{ id: "1", name: "Test", description: "", url: "javascript:alert(1)", icon: "🔗", iconType: "emoji" as const, accentColor: "blue" as AccentColor, category: "media", tags: [], isBuiltIn: false, isHidden: false, isPinned: false, statusEnabled: true, sortOrder: 0, clickCount: 0, lastOpened: null, createdAt: Date.now(), updatedAt: Date.now() }],
     };
     const result = importAllData(badData);

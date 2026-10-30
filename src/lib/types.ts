@@ -43,7 +43,6 @@ export interface UserSettings {
   greetingName: string;
   dashboardTitle: string;
   theme: ThemeMode;
-  accentColor: AccentColor;
   viewMode: ViewMode;
   openInNewTab: boolean;
   openLinksIn: "same-tab" | "new-tab";
@@ -85,7 +84,6 @@ export const DEFAULT_SETTINGS: UserSettings = {
   greetingName: "",
   dashboardTitle: "VinDeck",
   theme: "system",
-  accentColor: "blue",
   viewMode: "cards",
   openInNewTab: false,
   openLinksIn: "same-tab",

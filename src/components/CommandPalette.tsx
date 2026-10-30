@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Search, Plus, Settings, LogOut, Sun, Moon, Monitor, LayoutList, LayoutGrid, LayoutDashboard, X, Keyboard } from "@/components/icons";
 import { AppIcon } from "@/components/AppIcon";
-import type { App as AppType, ThemeMode, ViewMode, AccentColor } from "@/lib/types";
+import type { App as AppType, ThemeMode, ViewMode } from "@/lib/types";
 import { useKeyboardShortcuts, useFocusTrap } from "@/hooks/useKeyboardShortcuts";
 
 interface CommandPaletteProps {
@@ -19,8 +19,6 @@ interface CommandPaletteProps {
   onSetTheme: (theme: ThemeMode) => void;
   currentViewMode: ViewMode;
   onSetViewMode: (mode: ViewMode) => void;
-  currentAccent: AccentColor;
-  onSetAccent: (accent: AccentColor) => void;
   categories: string[];
 }
 

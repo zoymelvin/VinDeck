@@ -356,12 +356,6 @@ export function DashboardContent() {
           setSettings(updated);
           loadData();
         }}
-        accentColor={settings.accentColor}
-        onSetAccentColor={(c) => {
-          const updated = { ...settings, accentColor: c as AccentColor };
-          setSettings(updated);
-          loadData();
-        }}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
       />
@@ -485,12 +479,6 @@ export function DashboardContent() {
           }}
           currentViewMode={viewMode}
           onSetViewMode={setViewMode}
-          currentAccent={settings.accentColor}
-          onSetAccent={(c) => {
-            const updated = { ...settings, accentColor: c };
-            setSettings(updated);
-            loadData();
-          }}
           categories={categories.map((c) => c.name)}
         />
       )}

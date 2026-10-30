@@ -7,7 +7,6 @@ const defaultSettings: UserSettings = {
   greetingName: "",
   dashboardTitle: "VinDeck",
   theme: "system",
-  accentColor: "blue",
   viewMode: "cards",
   openInNewTab: false,
   openLinksIn: "same-tab",
@@ -18,7 +17,7 @@ const defaultSettings: UserSettings = {
   backgroundEffects: true,
   profilePhoto: "",
   profileName: "",
-  schemaVersion: 3,
+  schemaVersion: 4,
 };
 
 const SETTINGS_KEY = "vindeck_settings_v2";
@@ -56,6 +55,7 @@ function createSettingsStore() {
     window.addEventListener("storage", (e) => {
       if (e.key === SETTINGS_KEY) notify();
     });
+    window.addEventListener("vindeck-settings-changed", () => notify());
   }
 
   return {
@@ -90,17 +90,6 @@ export function useSettingsActions() {
       const stored = localStorage.getItem(SETTINGS_KEY);
       const current = stored ? JSON.parse(stored) : {};
       const updated = { ...defaultSettings, ...current, theme };
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
-      settingsStore.notify();
-    } catch {
-    }
-  }, []);
-
-  const setAccentColor = useCallback((accentColor: UserSettings["accentColor"]) => {
-    try {
-      const stored = localStorage.getItem(SETTINGS_KEY);
-      const current = stored ? JSON.parse(stored) : {};
-      const updated = { ...defaultSettings, ...current, accentColor };
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
       settingsStore.notify();
     } catch {
@@ -249,7 +238,6 @@ export function useSettingsActions() {
 
   return {
     setTheme,
-    setAccentColor,
     setViewMode,
     setOpenInNewTab,
     setOpenLinksIn,

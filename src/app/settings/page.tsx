@@ -17,7 +17,7 @@ import {
   Check,
   Trash2,
 } from "@/components/icons";
-import type { UserSettings, ThemeMode, ViewMode, AccentColor, App as AppType } from "@/lib/types";
+import type { UserSettings, ThemeMode, ViewMode, App as AppType } from "@/lib/types";
 import { ACCENT_COLORS } from "@/lib/types";
 import {
   getSettings,
@@ -223,27 +223,6 @@ export default function SettingsPage() {
                       {m === "system" && <Monitor className="w-3.5 h-3.5" />}
                       <span>{m}</span>
                     </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <h2 className="text-base font-bold text-slate-100 mb-1">Accent Color</h2>
-                <p className="text-xs text-slate-400 mb-3">Choose the accent highlight color</p>
-                <div className="flex items-center gap-3">
-                  {ACCENT_COLORS.map((ac) => (
-                    <button
-                      key={ac.value}
-                      onClick={() => updateSettings({ accentColor: ac.value })}
-                      type="button"
-                      className={`w-8 h-8 rounded-full border-2 transition-all ${
-                        settings.accentColor === ac.value
-                          ? "border-white scale-110 shadow-md"
-                          : "border-transparent hover:scale-105"
-                      }`}
-                      style={{ backgroundColor: `var(${ac.cssVar})` }}
-                      aria-label={ac.label}
-                    />
                   ))}
                 </div>
               </div>

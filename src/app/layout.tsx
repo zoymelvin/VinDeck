@@ -45,6 +45,11 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <link rel="manifest" href="/manifest.webmanifest" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('vindeck_settings_v2');var s=t?JSON.parse(t):{};var m=s.theme||'system';var d=m==='dark'||(m==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');document.documentElement.style.colorScheme=d?'dark':'light';}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`,
+          }}
+        />
       </head>
       <body
         suppressHydrationWarning
