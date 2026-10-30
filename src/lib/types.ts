@@ -50,7 +50,7 @@ export interface UserSettings {
   statusEnabled: boolean;
   statusCheckInterval: number;
   confirmBeforeOpen: boolean;
-  animations: "full" | "reduced";
+  animations: "full" | "reduced" | "follow";
   backgroundEffects: boolean;
   profilePhoto?: string;
   profileName?: string;
@@ -95,7 +95,7 @@ export const DEFAULT_SETTINGS: UserSettings = {
   backgroundEffects: true,
   profilePhoto: "",
   profileName: "",
-  schemaVersion: 3,
+  schemaVersion: 4,
 };
 
 export const BUILT_IN_CATEGORIES: Category[] = [

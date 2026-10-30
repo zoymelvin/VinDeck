@@ -140,7 +140,7 @@ export function useSettingsActions() {
     }
   }, []);
 
-  const setAnimations = useCallback((animations: "full" | "reduced") => {
+  const setAnimations = useCallback((animations: "full" | "reduced" | "follow") => {
     try {
       const stored = localStorage.getItem(SETTINGS_KEY);
       const current = stored ? JSON.parse(stored) : {};

@@ -6,7 +6,7 @@ import { isValidUrl } from "./validation";
 const STORAGE_KEYS = {
   apps: "vindeck_apps",
   categories: "vindeck_categories",
-  settings: "vindeck_settings",
+  settings: "vindeck_settings_v2",
   clickTracking: "vindeck_clicks",
   quickNotes: "vindeck_notes",
   schemaVersion: "vindeck_schema_version",

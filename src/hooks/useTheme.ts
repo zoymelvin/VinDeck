@@ -13,19 +13,32 @@ export function useTheme() {
     const resolved = theme === "system"
       ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
       : theme;
+
+    root.classList.add("theme-transition");
     root.setAttribute("data-theme", resolved);
     root.style.colorScheme = resolved;
+
+    const cleanup = () => {
+      root.classList.remove("theme-transition");
+    };
 
     if (theme === "system") {
       const mq = window.matchMedia("(prefers-color-scheme: dark)");
       const handler = () => {
         const r = mq.matches ? "dark" : "light";
+        root.classList.add("theme-transition");
         root.setAttribute("data-theme", r);
         root.style.colorScheme = r;
+        setTimeout(cleanup, 350);
       };
       mq.addEventListener("change", handler);
-      return () => mq.removeEventListener("change", handler);
+      return () => {
+        mq.removeEventListener("change", handler);
+        cleanup();
+      };
     }
+
+    setTimeout(cleanup, 350);
   }, [theme]);
 
   const setThemeMode = useCallback((mode: ThemeMode) => {

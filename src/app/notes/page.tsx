@@ -213,7 +213,7 @@ export default function NotesPage() {
       </header>
 
       {/* Main Two-Panel Layout */}
-      <div className="flex-1 flex overflow-hidden max-w-7xl w-full mx-auto p-2 sm:p-4 gap-4">
+      <div className="flex-1 flex overflow-hidden max-w-[1760px] w-full mx-auto p-2 sm:p-4 gap-4">
         {/* Left Panel: Note List */}
         <div
           className={`w-full sm:w-80 md:w-96 flex-shrink-0 flex flex-col bg-slate-900/60 rounded-3xl border border-slate-800/80 p-3 overflow-hidden ${

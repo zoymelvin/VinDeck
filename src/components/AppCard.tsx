@@ -108,7 +108,7 @@ export default function AppCard({
   const hostname = extractHostname(app.url);
 
   const cardClasses = {
-    cards: "group relative flex flex-col h-full min-h-[120px]",
+    cards: "group relative flex flex-col h-full min-h-[120px] sm:min-h-[176px]",
     list: "group relative flex items-center gap-3 min-h-[64px]",
     compact: "group relative flex items-center gap-2.5 min-h-[48px] px-2.5",
   };
@@ -138,19 +138,14 @@ export default function AppCard({
 
       {/* Card Content */}
       {viewMode === "cards" && (
-        <div className="relative z-10 p-3 sm:p-4 pointer-events-none">
+        <div className="relative z-10 p-3 sm:p-5 pointer-events-none flex flex-col h-full">
+          {/* Top Row: Icon + Pin/Status */}
           <div className="flex items-start justify-between gap-2 mb-2 sm:mb-3">
-            <div className="flex items-center gap-2.5 sm:gap-3 flex-1 min-w-0">
-              <div className="flex-shrink-0 w-11 h-11 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-                <AppIcon icon={app.icon} iconType={app.iconType === "emoji" ? "emoji" : app.iconType === "lucide" ? "lucide" : "brand"} iconSrc={app.iconSrc} name={app.name} className="w-8 h-8 sm:w-10 sm:h-10" size={40} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate">{app.name}</h3>
-                {app.description && <p className="hidden sm:block text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-0.5">{app.description}</p>}
-              </div>
+            <div className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center relative">
+              <AppIcon icon={app.icon} iconType={app.iconType === "emoji" ? "emoji" : app.iconType === "lucide" ? "lucide" : "brand"} iconSrc={app.iconSrc} name={app.name} className="w-7 h-7 sm:w-10 sm:h-10" size={48} />
+              {isPinned && <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-400 flex items-center justify-center"><Pin className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" aria-hidden="true" /></span>}
             </div>
             <div className="flex items-center gap-1 pointer-events-auto">
-              {isPinned && <Pin className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" aria-hidden="true" />}
               {status && (
                 <span
                   title={tooltipText}
@@ -163,26 +158,32 @@ export default function AppCard({
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-1.5 sm:pt-2 border-t border-slate-100 dark:border-slate-800">
-            <span className="hidden sm:inline text-[11px] text-slate-500 dark:text-slate-400 font-mono">{hostname}</span>
-            <div className="flex items-center gap-1 pointer-events-auto ml-auto sm:ml-0">
+          {/* Name - centered on mobile, left on desktop */}
+          <div className="flex-1 flex items-center sm:items-start">
+            <h3 className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100 text-center sm:text-left leading-tight sm:leading-normal line-clamp-2 sm:truncate">{app.name}</h3>
+          </div>
+
+          {/* Bottom actions - desktop only */}
+          <div className="hidden sm:flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">{hostname}</span>
+            <div className="flex items-center gap-1 pointer-events-auto ml-auto">
               <button
                 onClick={(e) => { e.stopPropagation(); onCopyLink(app.url); }}
-                className="p-1 sm:p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 aria-label={strings.common.copy}
               >
                 <Copy size={13} />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onOpen(app, true); }}
-                className="p-1 sm:p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 aria-label={strings.appCard.openInNewTab}
               >
                 <ExternalLink size={13} />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowContextMenu({ x: e.clientX, y: e.clientY }); }}
-                className="p-1 sm:p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 aria-label={strings.common.edit}
               >
                 <MoreVertical size={13} />
@@ -224,30 +225,15 @@ export default function AppCard({
       )}
 
       {viewMode === "compact" && (
-        <div className="relative z-10 p-2 w-full pointer-events-none">
-          <div className="flex items-center gap-3 w-full min-w-0">
-            <div className="flex-shrink-0 w-10 h-10 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
-              <AppIcon icon={app.icon} iconType={app.iconType === "emoji" ? "emoji" : app.iconType === "lucide" ? "lucide" : "brand"} iconSrc={app.iconSrc} name={app.name} className="w-6 h-6" size={24} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h3 className="font-medium text-slate-900 dark:text-slate-100 truncate">{app.name}</h3>
-                {isPinned && <Pin className="w-3 h-3 text-amber-400 flex-shrink-0" aria-hidden="true" />}
-                {status && (
-                  <span
-                    title={tooltipText}
-                    className={`flex items-center gap-1 text-xs ${statusColor} flex-shrink-0 cursor-help font-medium`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full bg-current ${status === "checking" ? "animate-pulse" : ""}`} />
-                    {statusLabel}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex items-center gap-1 flex-shrink-0 pointer-events-auto">
-              <button onClick={(e) => { e.stopPropagation(); onOpen(app, openInNewTabDefault); }} className="p-1.5 rounded text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label={strings.common.open}><ExternalLink size={14} /></button>
-              <button onClick={(e) => { e.stopPropagation(); setShowContextMenu({ x: e.clientX, y: e.clientY }); }} className="p-1.5 rounded text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label={strings.common.edit}><MoreVertical size={14} /></button>
-            </div>
+        <div className="relative z-10 p-2 w-full pointer-events-none flex flex-col items-center">
+          <div className="flex-shrink-0 w-14 h-14 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center relative">
+            <AppIcon icon={app.icon} iconType={app.iconType === "emoji" ? "emoji" : app.iconType === "lucide" ? "lucide" : "brand"} iconSrc={app.iconSrc} name={app.name} className="w-8 h-8 sm:w-12 sm:h-12" size={56} />
+            {isPinned && <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-400 flex items-center justify-center"><Pin className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" aria-hidden="true" /></span>}
+          </div>
+          <h3 className="mt-1.5 text-xs sm:text-sm font-medium text-slate-900 dark:text-slate-100 text-center leading-tight line-clamp-2">{app.name}</h3>
+          <div className="flex items-center gap-1 pointer-events-auto mt-1">
+            <button onClick={(e) => { e.stopPropagation(); onOpen(app, openInNewTabDefault); }} className="p-1 rounded text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label={strings.common.open}><ExternalLink size={14} /></button>
+            <button onClick={(e) => { e.stopPropagation(); setShowContextMenu({ x: e.clientX, y: e.clientY }); }} className="p-1 rounded text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label={strings.common.edit}><MoreVertical size={14} /></button>
           </div>
         </div>
       )}

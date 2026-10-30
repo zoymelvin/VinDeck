@@ -4,7 +4,7 @@ export function filterApps(
   apps: App[],
   query: string,
   categoryFilter: string | null,
-  showHidden: boolean
+  showHidden = false
 ): App[] {
   const lowerQuery = query.toLowerCase().trim();
 

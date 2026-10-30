@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
+import { motion } from "motion/react";
 import {
   Pin,
   Activity,
@@ -45,7 +46,6 @@ export function DashboardContent() {
   const [categories, setCategoriesState] = useState<Category[]>(() => getCategories());
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [showHiddenApps, setShowHiddenApps] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
 
   // Modals & Dialogs
@@ -91,24 +91,18 @@ export function DashboardContent() {
   const checkAllStatuses = useCallback(async () => {
     if (!statusEnabled) return;
 
-    const visibleApps = apps.filter((a) => !a.isHidden || showHiddenApps);
-    const urls = visibleApps.map((app): { id: string; url: string } => ({ id: app.id, url: app.statusUrl || app.url }));
+    const urls = apps.map((app): { id: string; url: string } => ({ id: app.id, url: app.statusUrl || app.url }));
 
     if (urls.length === 0) return;
 
-    // Set all to checking initially
     setAppStatuses((prev) => {
       const next = { ...prev };
-      urls.forEach(({ id }) => {
-        next[id] = "checking";
-      });
+      urls.forEach(({ id }) => { next[id] = "checking"; });
       return next;
     });
     setStatusInfo((prev) => {
       const next = { ...prev };
-      urls.forEach(({ id }) => {
-        next[id] = { status: "checking", lastChecked: Date.now(), latencyMs: 0, method: "server" };
-      });
+      urls.forEach(({ id }) => { next[id] = { status: "checking", lastChecked: Date.now(), latencyMs: 0, method: "server" }; });
       return next;
     });
 
@@ -120,9 +114,7 @@ export function DashboardContent() {
         credentials: "include",
       });
 
-      if (!response.ok) {
-        throw new Error("Status check failed");
-      }
+      if (!response.ok) throw new Error("Status check failed");
 
       interface StatusResult {
         id: string;
@@ -138,9 +130,7 @@ export function DashboardContent() {
 
       setAppStatuses((prev) => {
         const next = { ...prev };
-        results.forEach((result: StatusResult) => {
-          next[result.id] = result.state;
-        });
+        results.forEach((result: StatusResult) => { next[result.id] = result.state; });
         return next;
       });
       setStatusInfo((prev) => {
@@ -157,33 +147,21 @@ export function DashboardContent() {
         return next;
       });
     } catch (error) {
-      // Fallback to browser-side check for unsupported URLs
-      console.warn("Server-side status check failed, falling back to browser check:", error);
-      const visibleApps = apps.filter((a) => !a.isHidden || showHiddenApps);
-      for (const app of visibleApps) {
-        // Fallback to browser check
-        setAppStatuses((prev) => ({ ...prev, [app.id]: "checking" }));
-        setStatusInfo((prev) => ({ ...prev, [app.id]: { status: "checking", lastChecked: Date.now(), latencyMs: 0, method: "browser" } }));
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000);
-        const startTime = Date.now();
-
-        try {
-          await fetch(app.url, { method: "HEAD", mode: "no-cors", signal: controller.signal, cache: "no-cache" });
-          clearTimeout(timeoutId);
-          const latency = Date.now() - startTime;
-          setAppStatuses((prev) => ({ ...prev, [app.id]: "reachable" }));
-          setStatusInfo((prev) => ({ ...prev, [app.id]: { status: "reachable", lastChecked: Date.now(), latencyMs: latency, method: "browser" } }));
-        } catch {
-          clearTimeout(timeoutId);
-          const latency = Date.now() - startTime;
-          setAppStatuses((prev) => ({ ...prev, [app.id]: "unreachable" }));
-          setStatusInfo((prev) => ({ ...prev, [app.id]: { status: "unreachable", lastChecked: Date.now(), latencyMs: latency, method: "browser" } }));
-        }
-      }
+      console.warn("Status check failed:", error);
+      setAppStatuses((prev) => {
+        const next = { ...prev };
+        urls.forEach(({ id }) => { next[id] = "unreachable"; });
+        return next;
+      });
+      setStatusInfo((prev) => {
+        const next = { ...prev };
+        urls.forEach(({ id }) => {
+          next[id] = { status: "unreachable", lastChecked: Date.now(), latencyMs: 0, method: "server", reason: "request_failed" };
+        });
+        return next;
+      });
     }
-  }, [apps, showHiddenApps, statusEnabled]);
+  }, [apps, statusEnabled]);
 
   useEffect(() => {
     if (statusEnabled && !initialStatusCheckDone.current) {
@@ -227,10 +205,10 @@ export function DashboardContent() {
 
   const filteredApps = useMemo(() => {
     if (selectedCategory === "favorites") {
-      return filterApps(apps, searchQuery, null, showHiddenApps).filter((a) => a.isPinned);
+      return filterApps(apps, searchQuery, null).filter((a) => a.isPinned);
     }
-    return filterApps(apps, searchQuery, selectedCategory, showHiddenApps);
-  }, [apps, searchQuery, selectedCategory, showHiddenApps]);
+    return filterApps(apps, searchQuery, selectedCategory);
+  }, [apps, searchQuery, selectedCategory]);
 
   const allAppsSorted = useMemo(() => {
     const sorted = sortAppsByOrder(filteredApps);
@@ -458,56 +436,60 @@ export function DashboardContent() {
         />
 
         {/* Favorites Section */}
-        {/* All Apps Section */}
         <section className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold tracking-tight text-slate-200 light:text-slate-900">
-              All Apps
-            </h2>
-            <span className="text-xs text-slate-500 font-mono">
-              {allAppsSorted.length} {allAppsSorted.length === 1 ? "app" : "apps"}
-            </span>
-          </div>
-
-          {allAppsSorted.length === 0 ? (
-            <div className="p-8 text-center rounded-2xl bg-slate-900/40 border border-slate-800/60">
-              <p className="text-slate-400 text-sm font-medium">No apps found</p>
-              <p className="text-slate-600 text-xs mt-1">Try changing your search or category filter</p>
-            </div>
-          ) : (
-            <div
-              className={
-                viewMode === "cards"
-                  ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
-                  : viewMode === "list"
-                  ? "space-y-2"
-                  : "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2"
-              }
-            >
-              {allAppsSorted.map((app) => (
-                <AppCard
-                  key={app.id}
-                  app={app}
-                  viewMode={viewMode}
-                  isPinned={app.isPinned}
-                  onOpen={handleOpenApp}
-                  onEdit={(a) => {
-                    setEditingApp(a);
-                    setIsAddAppOpen(true);
-                  }}
-                  onTogglePin={handleTogglePin}
-                  onToggleHidden={handleToggleHidden}
-                  onDelete={handleDeleteApp}
-                  onCopyLink={handleCopyLink}
-                  status={appStatuses[app.id] ?? null}
-                  statusInfo={statusInfo[app.id] ?? null}
-                  checking={appStatuses[app.id] === "checking"}
-                  openInNewTabDefault={settings.openLinksIn === "new-tab"}
-                  accentColor={app.accentColor}
-                />
-              ))}
-            </div>
-          )}
+            {allAppsSorted.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+                className="p-8 text-center rounded-2xl bg-slate-900/40 border border-slate-800/60"
+              >
+                <p className="text-slate-400 text-sm font-medium">No apps found</p>
+                <p className="text-slate-600 text-xs mt-1">Try changing your search or category filter</p>
+              </motion.div>
+            ) : (
+              <motion.div
+                layout
+                className={
+                  viewMode === "cards"
+                    ? "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3"
+                    : viewMode === "list"
+                    ? "space-y-2"
+                    : "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2"
+                }
+              >
+                {allAppsSorted.map((app, index) => (
+                  <motion.div
+                    key={app.id}
+                    layout
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1], delay: index * 0.05 }}
+                  >
+                    <AppCard
+                      key={app.id}
+                      app={app}
+                      viewMode={viewMode}
+                      isPinned={app.isPinned}
+                      onOpen={handleOpenApp}
+                      onEdit={(a) => {
+                        setEditingApp(a);
+                        setIsAddAppOpen(true);
+                      }}
+                      onTogglePin={handleTogglePin}
+                      onToggleHidden={handleToggleHidden}
+                      onDelete={handleDeleteApp}
+                      onCopyLink={handleCopyLink}
+                      status={appStatuses[app.id] ?? null}
+                      statusInfo={statusInfo[app.id] ?? null}
+                      checking={appStatuses[app.id] === "checking"}
+                      openInNewTabDefault={settings.openLinksIn === "new-tab"}
+                      accentColor={app.accentColor}
+                    />
+                  </motion.div>
+                ))}
+              </motion.div>
+            )}
         </section>
       </main>
 
