@@ -32,7 +32,6 @@ import { Header } from "@/components/Header";
 import { Toolbar } from "@/components/Toolbar";
 import AppCard from "@/components/AppCard";
 import AppForm from "@/components/AppForm";
-import SettingsDialog from "@/components/SettingsDialog";
 import CommandPalette from "@/components/CommandPalette";
 import { ConfirmOpenDialog } from "@/components/ConfirmOpenDialog";
 import { KeyboardShortcutsDialog } from "@/components/KeyboardShortcutsDialog";
