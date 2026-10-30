@@ -360,7 +360,7 @@ export function DashboardContent() {
         setSearchQuery={setSearchQuery}
       />
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-28 sm:pb-8 w-full space-y-4">
+      <main className="flex-1 max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-28 sm:pb-8 w-full space-y-4">
         {/* Hero Section - Single row */}
         <section className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 min-w-0">
@@ -509,11 +509,6 @@ export function DashboardContent() {
           onClose={() => setIsProfileOpen(false)}
           currentName={settings.profileName || settings.greetingName}
           currentPhoto={settings.profilePhoto || ""}
-          onSave={(name, photo) => {
-            const updated = { ...settings, profileName: name, greetingName: name, profilePhoto: photo };
-            setSettings(updated);
-            loadData();
-          }}
         />
       )}
     </div>

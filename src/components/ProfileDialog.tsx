@@ -1,14 +1,14 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
-import { X, User, Upload, Link, Trash2, Check } from "@/components/icons";
+import { X, User, Upload, Link, Trash2 } from "@/components/icons";
+import { useSettingsActions } from "@/hooks/useSettingsStore";
 
 interface ProfileDialogProps {
   isOpen: boolean;
   onClose: () => void;
   currentName: string;
   currentPhoto: string;
-  onSave: (name: string, photo: string) => void;
 }
 
 export function ProfileDialog({
@@ -16,8 +16,8 @@ export function ProfileDialog({
   onClose,
   currentName,
   currentPhoto,
-  onSave,
 }: ProfileDialogProps) {
+  const { setProfileName, setProfilePhoto } = useSettingsActions();
   const [name, setName] = useState(currentName);
   const [photo, setPhoto] = useState(currentPhoto);
   const [urlInput, setUrlInput] = useState("");
@@ -38,8 +38,8 @@ export function ProfileDialog({
       return;
     }
 
-    if (file.size > 2 * 1024 * 1024) {
-      setError("Image must be smaller than 2 MB.");
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image must be smaller than 5 MB.");
       return;
     }
 
@@ -53,7 +53,6 @@ export function ProfileDialog({
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        // Center crop to square
         const minDim = Math.min(img.width, img.height);
         const startX = (img.width - minDim) / 2;
         const startY = (img.height - minDim) / 2;
@@ -106,8 +105,9 @@ export function ProfileDialog({
     setError("");
   };
 
-  const handleSave = () => {
-    onSave(name.trim(), photo);
+  const handleSave = async () => {
+    await setProfileName(name.trim());
+    await setProfilePhoto(photo);
     onClose();
   };
 
@@ -118,13 +118,15 @@ export function ProfileDialog({
     return str.slice(0, 2).toUpperCase();
   };
 
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-md animate-in fade-in duration-200">
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="profile-dialog-title"
-        className="relative w-full max-w-md rounded-3xl bg-slate-900/90 dark:bg-slate-900/90 light:bg-white/95 border border-slate-800 dark:border-slate-800 light:border-slate-200 shadow-2xl backdrop-blur-2xl p-6 overflow-hidden animate-in zoom-in-95 duration-200"
+        className="relative w-full max-w-md rounded-3xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 shadow-2xl backdrop-blur-2xl p-6 overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         <button
@@ -136,7 +138,7 @@ export function ProfileDialog({
           <X className="w-5 h-5" />
         </button>
 
-        <h2 id="profile-dialog-title" className="text-xl font-bold text-slate-100 light:text-slate-900 mb-5">
+        <h2 id="profile-dialog-title" className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-5">
           Profile Settings
         </h2>
 
@@ -154,14 +156,14 @@ export function ProfileDialog({
             )}
           </div>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-slate-200 light:text-slate-800 truncate">
+            <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">
               {name || "VinDeck User"}
             </p>
             {photo && (
               <button
                 onClick={handleRemovePhoto}
                 type="button"
-                className="flex items-center gap-1.5 text-xs text-rose-400 hover:text-rose-300 mt-1 transition-colors"
+                className="flex items-center gap-1.5 text-xs text-rose-600 hover:text-rose-500 mt-1 transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 <span>Remove photo</span>
@@ -172,7 +174,7 @@ export function ProfileDialog({
 
         {/* Display Name Input */}
         <div className="mb-5">
-          <label htmlFor="display-name" className="block text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider mb-2">
+          <label htmlFor="display-name" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
             Display Name
           </label>
           <input
@@ -181,21 +183,21 @@ export function ProfileDialog({
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="Your name"
-            className="w-full px-4 py-2.5 rounded-2xl bg-slate-950/60 light:bg-slate-100 border border-slate-800 light:border-slate-300 text-sm text-slate-200 light:text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+            className="w-full px-4 py-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
           />
         </div>
 
         {/* Photo Mode Tabs */}
         <div className="mb-4">
-          <label className="block text-xs font-semibold text-slate-400 light:text-slate-600 uppercase tracking-wider mb-2">
+          <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
             Profile Photo
           </label>
-          <div className="flex items-center gap-2 p-1 rounded-2xl bg-slate-950/60 light:bg-slate-100 border border-slate-800 light:border-slate-300 mb-3">
+          <div className="flex items-center gap-2 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 mb-3">
             <button
               onClick={() => setMode("upload")}
               type="button"
               className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                mode === "upload" ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"
+                mode === "upload" ? "bg-indigo-500 text-white" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
             >
               <Upload className="w-3.5 h-3.5" />
@@ -205,7 +207,7 @@ export function ProfileDialog({
               onClick={() => setMode("url")}
               type="button"
               className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                mode === "url" ? "bg-indigo-500 text-white" : "text-slate-400 hover:text-slate-200"
+                mode === "url" ? "bg-indigo-500 text-white" : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
               }`}
             >
               <Link className="w-3.5 h-3.5" />
@@ -226,10 +228,10 @@ export function ProfileDialog({
               <button
                 onClick={() => fileInputRef.current?.click()}
                 type="button"
-                className="w-full py-3 rounded-2xl border border-dashed border-slate-700 hover:border-indigo-500 text-slate-400 hover:text-slate-200 text-xs font-medium flex items-center justify-center gap-2 transition-all"
+                className="w-full py-3 rounded-2xl border border-dashed border-slate-300 hover:border-indigo-500 dark:border-slate-600 dark:hover:border-indigo-500 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-medium flex items-center justify-center gap-2 transition-all"
               >
                 <Upload className="w-4 h-4" />
-                <span>Choose PNG, JPG, or WEBP (max 2 MB)</span>
+                <span>Choose PNG, JPG, or WEBP (max 5 MB)</span>
               </button>
             </div>
           ) : (
@@ -239,7 +241,7 @@ export function ProfileDialog({
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 placeholder="https://example.com/photo.png"
-                className="flex-1 px-4 py-2 rounded-2xl bg-slate-950/60 light:bg-slate-100 border border-slate-800 light:border-slate-300 text-xs text-slate-200 light:text-slate-800 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+                className="flex-1 px-4 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-sm text-slate-900 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
               />
               <button
                 onClick={handleApplyUrl}
@@ -252,7 +254,7 @@ export function ProfileDialog({
             </div>
           )}
 
-          {error && <p className="text-xs text-rose-400 mt-2 font-medium">{error}</p>}
+          {error && <p className="text-xs text-rose-600 dark:text-rose-400 mt-2 font-medium">{error}</p>}
         </div>
 
         {/* Actions */}
@@ -260,7 +262,7 @@ export function ProfileDialog({
           <button
             onClick={onClose}
             type="button"
-            className="px-4 py-2.5 rounded-2xl text-sm font-semibold text-slate-300 light:text-slate-700 bg-slate-800/50 light:bg-slate-100 hover:bg-slate-800 light:hover:bg-slate-200 transition-colors"
+            className="px-4 py-2.5 rounded-2xl text-sm font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
           >
             Cancel
           </button>
@@ -275,4 +277,11 @@ export function ProfileDialog({
       </div>
     </div>
   );
+}
+
+function getInitials(str: string) {
+  if (!str) return "V";
+  const words = str.trim().split(/\s+/);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return str.slice(0, 2).toUpperCase();
 }
