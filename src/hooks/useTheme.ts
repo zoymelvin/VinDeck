@@ -6,6 +6,7 @@ import { useSettingsSelector, useSettingsActions } from "@/hooks/useSettingsStor
 
 export function useTheme() {
   const theme = useSettingsSelector((s) => s.theme);
+  const actions = useSettingsActions();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -28,9 +29,8 @@ export function useTheme() {
   }, [theme]);
 
   const setThemeMode = useCallback((mode: ThemeMode) => {
-    const actions = useSettingsActions();
     actions.setTheme(mode);
-  }, []);
+  }, [actions]);
 
   return { theme, setTheme: setThemeMode };
 }
@@ -41,11 +41,11 @@ export function useAccentColor() {
 
 export function useViewMode() {
   const viewMode = useSettingsSelector((s) => s.viewMode);
+  const actions = useSettingsActions();
 
   const setViewModeCallback = useCallback((mode: ViewMode) => {
-    const actions = useSettingsActions();
     actions.setViewMode(mode);
-  }, []);
+  }, [actions]);
 
   return { viewMode, setViewMode: setViewModeCallback };
 }

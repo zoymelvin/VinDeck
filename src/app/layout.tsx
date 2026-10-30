@@ -57,6 +57,11 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
       >
         <HydrationMarker />
         {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if('serviceWorker' in navigator && location.hostname !== 'localhost'){navigator.serviceWorker.register('/sw.js');}`,
+          }}
+        />
       </body>
     </html>
   );
