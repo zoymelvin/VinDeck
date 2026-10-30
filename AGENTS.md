@@ -63,3 +63,8 @@ Gate order: `tsc --noEmit` → `lint` → `test` → `build`.
 - User's dev server: 3000/3001 (restartable, clear `.next` if needed)
 - Test servers: 3100 (dev), 3101 (production) — kill by PID after use
 - Never touch port 3001 (user's)
+
+## Deploy checklist
+
+- Before push/deploy, verify in a clean worktree from the target commit: `npm install` (no flags), `npm ci`, `npx tsc --noEmit`, `npm run lint`, `npm run build` (without DATABASE_URL), and `npm test`.
+- Keep `@types/node` on the same major version as the Vercel runtime (match `engines.node`); align it with vitest/vite peer requirements without `--legacy-peer-deps` or `overrides`.
