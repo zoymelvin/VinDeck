@@ -387,8 +387,6 @@ export function DashboardContent() {
           selectedCategory={selectedCategory}
           onSelectCategory={setSelectedCategory}
           categories={categories}
-          showHiddenApps={showHiddenApps}
-          onToggleShowHiddenApps={setShowHiddenApps}
         />
 
         {/* Favorites Section */}

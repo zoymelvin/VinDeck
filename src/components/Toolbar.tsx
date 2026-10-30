@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { Grid, List, Layout, Eye } from "@/components/icons";
+import React from "react";
+import { Grid, List, Layout } from "@/components/icons";
 import type { ViewMode, Category } from "@/lib/types";
 import { strings } from "@/lib/strings";
 
@@ -11,8 +11,6 @@ interface ToolbarProps {
   selectedCategory: string | null;
   onSelectCategory: (category: string | null) => void;
   categories: Category[];
-  showHiddenApps: boolean;
-  onToggleShowHiddenApps: (show: boolean) => void;
 }
 
 export function Toolbar({
@@ -21,11 +19,7 @@ export function Toolbar({
   selectedCategory,
   onSelectCategory,
   categories,
-  showHiddenApps,
-  onToggleShowHiddenApps,
 }: ToolbarProps) {
-  const [isViewPopoverOpen, setIsViewPopoverOpen] = useState(false);
-
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-4 pb-1">
       {/* Scrollable Category Chips */}
@@ -118,39 +112,6 @@ export function Toolbar({
             <Layout className="w-3.5 h-3.5" />
             <span className="hidden sm:inline">{strings.common.compact}</span>
           </button>
-        </div>
-
-        {/* View Popover / Toggle Button */}
-        <div className="relative">
-          <button
-            onClick={() => setIsViewPopoverOpen(!isViewPopoverOpen)}
-            type="button"
-            className={`flex items-center gap-2 px-3 py-2 rounded-2xl text-xs font-semibold border transition-all ${
-              showHiddenApps
-                ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-500/15 dark:text-indigo-400 border-indigo-200 dark:border-indigo-500/30"
-                : "bg-slate-100 text-slate-700 dark:bg-slate-900/80 dark:text-slate-300 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700"
-            }`}
-            aria-label="View options"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>{strings.home.toolbar.view}</span>
-          </button>
-
-          {isViewPopoverOpen && (
-            <div className="absolute right-0 mt-2 w-56 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-800 shadow-xl backdrop-blur-xl p-3 z-30 animate-in fade-in zoom-in-95 duration-150">
-              <label className="flex items-center justify-between cursor-pointer select-none">
-                <span className="text-xs font-medium text-slate-800 dark:text-slate-200">
-                  {strings.home.toolbar.showHidden}
-                </span>
-                <input
-                  type="checkbox"
-                  checked={showHiddenApps}
-                  onChange={(e) => onToggleShowHiddenApps(e.target.checked)}
-                  className="w-4 h-4 rounded text-indigo-500 focus:ring-indigo-500 border-slate-300 dark:border-slate-700"
-                />
-              </label>
-            </div>
-          )}
         </div>
       </div>
     </div>
