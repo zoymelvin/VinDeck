@@ -94,7 +94,7 @@ export function getClearSessionCookieOptions(isProduction: boolean) {
 }
 
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
-const MAX_ATTEMPTS = 5;
+const MAX_ATTEMPTS = process.env.NODE_ENV === "production" ? 5 : 100;
 const WINDOW_MS = 10 * 60 * 1000;
 
 export function checkRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {

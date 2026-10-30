@@ -106,7 +106,6 @@ describe("search", () => {
       isBuiltIn: true,
       isHidden: false,
       isPinned: true,
-      statusEnabled: true,
       sortOrder: 1,
       clickCount: 5,
       lastOpened: Date.now(),
@@ -126,7 +125,6 @@ describe("search", () => {
       isBuiltIn: true,
       isHidden: false,
       isPinned: true,
-      statusEnabled: true,
       sortOrder: 2,
       clickCount: 10,
       lastOpened: Date.now() - 1000,
@@ -146,7 +144,6 @@ describe("search", () => {
       isBuiltIn: false,
       isHidden: true,
       isPinned: false,
-      statusEnabled: true,
       sortOrder: 3,
       clickCount: 0,
       lastOpened: null,
@@ -201,18 +198,16 @@ describe("import/export validation", () => {
       viewMode: "cards",
       openInNewTab: false,
       openLinksIn: "same-tab",
-      statusEnabled: true,
-      statusCheckInterval: 60,
       confirmBeforeOpen: true,
       animations: "full",
       backgroundEffects: true,
       profilePhoto: "",
       profileName: "",
-      schemaVersion: 4,
+      schemaVersion: 5,
     },
     quickNotes: "",
     exportedAt: Date.now(),
-    schemaVersion: 4,
+    schemaVersion: 5,
   };
 
   it("rejects invalid schema version", () => {
@@ -231,8 +226,8 @@ describe("import/export validation", () => {
   it("rejects invalid app URL", () => {
     const badData = {
       ...validExportData,
-      schemaVersion: 4,
-      apps: [{ id: "1", name: "Test", description: "", url: "javascript:alert(1)", icon: "🔗", iconType: "emoji" as const, accentColor: "blue" as AccentColor, category: "media", tags: [], isBuiltIn: false, isHidden: false, isPinned: false, statusEnabled: true, sortOrder: 0, clickCount: 0, lastOpened: null, createdAt: Date.now(), updatedAt: Date.now() }],
+      schemaVersion: 5,
+      apps: [{ id: "1", name: "Test", description: "", url: "javascript:alert(1)", icon: "🔗", iconType: "emoji" as const, accentColor: "blue" as AccentColor, category: "media", tags: [], isBuiltIn: false, isHidden: false, isPinned: false, sortOrder: 0, clickCount: 0, lastOpened: null, createdAt: Date.now(), updatedAt: Date.now() }],
     };
     const result = importAllData(badData);
     expect(result.success).toBe(false);

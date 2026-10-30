@@ -6,12 +6,6 @@ import { AppIcon } from "@/components/AppIcon";
 import type { App as AppType, AccentColor } from "@/lib/types";
 import { strings } from "@/lib/strings";
 
-export interface StatusInfo {
-  status: "checking" | "reachable" | "unreachable";
-  lastChecked: number;
-  latencyMs: number;
-}
-
 interface AppCardProps {
   app: AppType;
   viewMode: "cards" | "list" | "compact";
@@ -22,27 +16,9 @@ interface AppCardProps {
   onToggleHidden: (app: AppType) => void;
   onDelete: (app: AppType) => void;
   onCopyLink: (url: string) => void;
-  onStatusChange?: (appId: string, reachable: boolean | null) => void;
-  status: "checking" | "reachable" | "unreachable" | "unsupported" | null;
-  statusInfo?: { status: "checking" | "reachable" | "unreachable" | "unsupported"; lastChecked: number; latencyMs: number; reason?: string; method: string } | null;
-  checking: boolean;
   openInNewTabDefault: boolean;
   accentColor: AccentColor;
 }
-
-const STATUS_COLORS = {
-  checking: "text-amber-500 dark:text-amber-400",
-  reachable: "text-emerald-600 dark:text-emerald-400",
-  unreachable: "text-rose-600 dark:text-rose-400",
-  unsupported: "text-slate-500 dark:text-slate-400",
-};
-
-const STATUS_LABELS = {
-  checking: strings.status.checking,
-  reachable: strings.status.online,
-  unreachable: strings.status.offline,
-  unsupported: "Unsupported",
-};
 
 function extractHostname(url: string): string {
   try {
@@ -62,8 +38,6 @@ export default function AppCard({
   onToggleHidden,
   onDelete,
   onCopyLink,
-  status,
-  statusInfo,
   openInNewTabDefault,
   accentColor,
 }: AppCardProps) {
@@ -93,18 +67,6 @@ export default function AppCard({
     }
   };
 
-  const statusColor = status ? STATUS_COLORS[status] : "text-gray-400";
-  const statusLabel = status ? STATUS_LABELS[status] : "";
-
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
-  const tooltipText = statusInfo
-    ? `Checked from this device ${Math.max(0, Math.round((now - statusInfo.lastChecked) / 1000))}s ago · ${statusInfo.latencyMs} ms. Some apps block browser checks, so this may be inaccurate.`
-    : undefined;
-
   const hostname = extractHostname(app.url);
 
   const cardClasses = {
@@ -121,9 +83,8 @@ export default function AppCard({
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="button"
-      aria-label={`${app.name}${app.description ? `, ${app.description}` : ""}${status ? `, status: ${statusLabel}` : ""}`}
+      aria-label={`${app.name}${app.description ? `, ${app.description}` : ""}`}
       className={`${cardClasses[viewMode]} bg-white dark:bg-slate-900/90 rounded-2xl border border-slate-200/90 dark:border-slate-800/80 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800`}
-      style={{ borderLeft: `4px solid var(--color-${accentColor}-500)` }}
     >
       {/* Stretched Link - covers entire card */}
       <button
@@ -141,29 +102,23 @@ export default function AppCard({
         <div className="relative z-10 p-3 sm:p-5 pointer-events-none flex flex-col h-full">
           {/* Top Row: Icon + Pin/Status */}
           <div className="flex items-start justify-between gap-2 mb-2 sm:mb-3">
-            <div className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center relative">
-              <AppIcon icon={app.icon} iconType={app.iconType === "emoji" ? "emoji" : app.iconType === "lucide" ? "lucide" : "brand"} iconSrc={app.iconSrc} name={app.name} className="w-7 h-7 sm:w-10 sm:h-10" size={48} />
-              {isPinned && <span className="absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-amber-400 flex items-center justify-center"><Pin className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white" aria-hidden="true" /></span>}
-            </div>
-            <div className="flex items-center gap-1 pointer-events-auto">
-              {status && (
-                <span
-                  title={tooltipText}
-                  className={`flex items-center gap-1 text-[10px] sm:text-xs ${statusColor} px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full bg-slate-100 dark:bg-slate-800 cursor-help font-medium`}
-                >
-                  <span className={`w-1.5 h-1.5 rounded-full bg-current ${status === "checking" ? "animate-pulse" : ""}`} aria-hidden="true" />
-                  <span className="hidden sm:inline">{statusLabel}</span>
-                </span>
-              )}
+            <div className="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl sm:rounded-3xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center relative">
+              <AppIcon icon={app.icon} iconType={app.iconType === "emoji" ? "emoji" : app.iconType === "lucide" ? "lucide" : "brand"} iconSrc={app.iconSrc} name={app.name} className="w-8 h-8 sm:w-10 sm:h-10" size={48} />
+              {isPinned && <span className="absolute -top-1 -right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 rounded-full bg-amber-400/90 flex items-center justify-center"><Pin className="w-2 h-2 sm:w-2.5 sm:h-2.5 text-white" aria-hidden="true" /></span>}
             </div>
           </div>
 
-          {/* Name - centered on mobile, left on desktop */}
+          {/* Name */}
           <div className="flex-1 flex items-center sm:items-start">
             <h3 className="font-semibold text-sm sm:text-base text-slate-900 dark:text-slate-100 text-center sm:text-left leading-tight sm:leading-normal line-clamp-2 sm:truncate">{app.name}</h3>
           </div>
 
-          {/* Bottom actions - desktop only */}
+          {/* Description */}
+          {app.description && (
+            <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mb-1 hidden sm:block">{app.description}</p>
+          )}
+
+          {/* Hostname + actions */}
           <div className="hidden sm:flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
             <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">{hostname}</span>
             <div className="flex items-center gap-1 pointer-events-auto ml-auto">
@@ -203,15 +158,6 @@ export default function AppCard({
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">{app.name}</h3>
                 {isPinned && <Pin className="w-4 h-4 text-amber-400 flex-shrink-0" aria-hidden="true" />}
-                {status && (
-                  <span
-                    title={tooltipText}
-                    className={`flex items-center gap-1 text-xs ${statusColor} flex-shrink-0 cursor-help font-medium`}
-                  >
-                    <span className={`w-1.5 h-1.5 rounded-full bg-current ${status === "checking" ? "animate-pulse" : ""}`} />
-                    {statusLabel}
-                  </span>
-                )}
               </div>
               {app.description && <p className="text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">{app.description}</p>}
             </div>

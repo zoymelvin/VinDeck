@@ -10,14 +10,12 @@ const defaultSettings: UserSettings = {
   viewMode: "cards",
   openInNewTab: false,
   openLinksIn: "same-tab",
-  statusEnabled: true,
-  statusCheckInterval: 60,
   confirmBeforeOpen: true,
   animations: "full",
   backgroundEffects: true,
   profilePhoto: "",
   profileName: "",
-  schemaVersion: 4,
+  schemaVersion: 5,
 };
 
 const SETTINGS_KEY = "vindeck_settings_v2";
@@ -118,17 +116,6 @@ export function useSettingsActions() {
     }
   }, []);
 
-  const setStatusEnabled = useCallback((statusEnabled: boolean) => {
-    try {
-      const stored = localStorage.getItem(SETTINGS_KEY);
-      const current = stored ? JSON.parse(stored) : {};
-      const updated = { ...defaultSettings, ...current, statusEnabled };
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
-      settingsStore.notify();
-    } catch {
-    }
-  }, []);
-
   const setConfirmBeforeOpen = useCallback((confirmBeforeOpen: boolean) => {
     try {
       const stored = localStorage.getItem(SETTINGS_KEY);
@@ -195,17 +182,6 @@ export function useSettingsActions() {
     }
   }, []);
 
-  const setStatusCheckInterval = useCallback((statusCheckInterval: number) => {
-    try {
-      const stored = localStorage.getItem(SETTINGS_KEY);
-      const current = stored ? JSON.parse(stored) : {};
-      const updated = { ...defaultSettings, ...current, statusCheckInterval };
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(updated));
-      settingsStore.notify();
-    } catch {
-    }
-  }, []);
-
   const setProfilePhoto = useCallback((profilePhoto: string) => {
     try {
       const stored = localStorage.getItem(SETTINGS_KEY);
@@ -241,8 +217,6 @@ export function useSettingsActions() {
     setViewMode,
     setOpenInNewTab,
     setOpenLinksIn,
-    setStatusEnabled,
-    setStatusCheckInterval,
     setConfirmBeforeOpen,
     setAnimations,
     setBackgroundEffects,

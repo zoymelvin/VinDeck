@@ -55,7 +55,7 @@ describe("storage", () => {
   it("persists and retrieves apps", async () => {
     const { setApps, getApps } = await getStorage();
     const customApps: App[] = [
-      { id: "custom-1", name: "Custom", description: "", url: "https://custom.com", icon: "🔗", iconType: "emoji", accentColor: "blue", category: "media", tags: [], isBuiltIn: false, isHidden: false, isPinned: false, statusEnabled: true, sortOrder: 0, clickCount: 0, lastOpened: null, createdAt: Date.now(), updatedAt: Date.now() },
+      { id: "custom-1", name: "Custom", description: "", url: "https://custom.com", icon: "🔗", iconType: "emoji", accentColor: "blue", category: "media", tags: [], isBuiltIn: false, isHidden: false, isPinned: false, sortOrder: 0, clickCount: 0, lastOpened: null, createdAt: Date.now(), updatedAt: Date.now() },
     ];
     setApps(customApps);
     const apps = getApps();
@@ -66,7 +66,7 @@ describe("storage", () => {
   it("merges built-in with custom on migration", async () => {
     const { getApps, setApps } = await getStorage();
     const existingApps: App[] = [
-      { id: "custom-1", name: "Custom", description: "", url: "https://custom.com", icon: "🔗", iconType: "emoji", accentColor: "blue", category: "media", tags: [], isBuiltIn: false, isHidden: false, isPinned: false, statusEnabled: true, sortOrder: 10, clickCount: 0, lastOpened: null, createdAt: Date.now(), updatedAt: Date.now() },
+      { id: "custom-1", name: "Custom", description: "", url: "https://custom.com", icon: "🔗", iconType: "emoji", accentColor: "blue", category: "media", tags: [], isBuiltIn: false, isHidden: false, isPinned: false, sortOrder: 10, clickCount: 0, lastOpened: null, createdAt: Date.now(), updatedAt: Date.now() },
     ];
     localStorage.setItem("vindeck_apps", JSON.stringify(existingApps));
     localStorage.setItem("vindeck_schema_version", "0");
@@ -109,7 +109,7 @@ describe("storage", () => {
     expect(data.apps).toBeDefined();
     expect(data.categories).toBeDefined();
     expect(data.settings).toBeDefined();
-    expect(data.schemaVersion).toBe(4);
+    expect(data.schemaVersion).toBe(5);
     expect(data.exportedAt).toBeGreaterThan(0);
   });
 
@@ -117,13 +117,13 @@ describe("storage", () => {
     const { importAllData, getApps, getSettings } = await getStorage();
     const exportData: ExportData = {
       apps: [
-        { id: "imported-1", name: "Imported", description: "", url: "https://imported.com", icon: "🔗", iconType: "emoji", accentColor: "blue", category: "media", tags: [], isBuiltIn: false, isHidden: false, isPinned: false, statusEnabled: true, sortOrder: 0, clickCount: 0, lastOpened: null, createdAt: Date.now(), updatedAt: Date.now() },
+        { id: "imported-1", name: "Imported", description: "", url: "https://imported.com", icon: "🔗", iconType: "emoji", accentColor: "blue", category: "media", tags: [], isBuiltIn: false, isHidden: false, isPinned: false, sortOrder: 0, clickCount: 0, lastOpened: null, createdAt: Date.now(), updatedAt: Date.now() },
       ],
       categories: [{ id: "custom-cat", name: "Custom", isBuiltIn: false, sortOrder: 10 }],
       settings: { ...DEFAULT_SETTINGS, greetingName: "Imported User" },
       quickNotes: "Imported notes",
       exportedAt: Date.now(),
-      schemaVersion: 4,
+      schemaVersion: 5,
     };
 
     const result = importAllData(exportData);
@@ -161,13 +161,13 @@ describe("storage", () => {
     const { importAllData } = await getStorage();
     const exportData: ExportData = {
       apps: [
-        { id: "bad", name: "Bad", description: "", url: "javascript:alert(1)", icon: "🔗", iconType: "emoji", accentColor: "blue", category: "media", tags: [], isBuiltIn: false, isHidden: false, isPinned: false, statusEnabled: true, sortOrder: 0, clickCount: 0, lastOpened: null, createdAt: Date.now(), updatedAt: Date.now() },
+        { id: "bad", name: "Bad", description: "", url: "javascript:alert(1)", icon: "🔗", iconType: "emoji", accentColor: "blue", category: "media", tags: [], isBuiltIn: false, isHidden: false, isPinned: false, sortOrder: 0, clickCount: 0, lastOpened: null, createdAt: Date.now(), updatedAt: Date.now() },
       ],
       categories: [],
       settings: DEFAULT_SETTINGS,
       quickNotes: "",
       exportedAt: Date.now(),
-      schemaVersion: 4,
+      schemaVersion: 5,
     };
     const result = importAllData(exportData);
     expect(result.success).toBe(false);
@@ -176,7 +176,7 @@ describe("storage", () => {
 
   it("resets to defaults", async () => {
     const { setApps, resetToDefaults, getApps } = await getStorage();
-    setApps([{ id: "custom", name: "Custom", description: "", url: "https://custom.com", icon: "🔗", iconType: "emoji", accentColor: "blue", category: "media", tags: [], isBuiltIn: false, isHidden: false, isPinned: false, statusEnabled: true, sortOrder: 0, clickCount: 0, lastOpened: null, createdAt: Date.now(), updatedAt: Date.now() }]);
+    setApps([{ id: "custom", name: "Custom", description: "", url: "https://custom.com", icon: "🔗", iconType: "emoji", accentColor: "blue", category: "media", tags: [], isBuiltIn: false, isHidden: false, isPinned: false, sortOrder: 0, clickCount: 0, lastOpened: null, createdAt: Date.now(), updatedAt: Date.now() }]);
     resetToDefaults();
 
     const apps = getApps();

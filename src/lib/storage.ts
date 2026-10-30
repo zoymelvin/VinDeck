@@ -3,6 +3,17 @@ import { DEFAULT_SETTINGS, BUILT_IN_CATEGORIES } from "./types";
 import { BUILT_IN_APPS } from "./defaults";
 import { isValidUrl } from "./validation";
 
+interface LegacyApp extends Omit<App, "statusEnabled" | "statusUrl"> {
+  statusEnabled?: boolean;
+  statusUrl?: string;
+}
+
+interface LegacySettings extends Omit<UserSettings, "statusEnabled" | "statusDisplay" | "statusCheckInterval"> {
+  statusEnabled?: boolean;
+  statusDisplay?: "simple" | "live" | "off";
+  statusCheckInterval?: number;
+}
+
 const STORAGE_KEYS = {
   apps: "vindeck_apps",
   categories: "vindeck_categories",
@@ -12,7 +23,7 @@ const STORAGE_KEYS = {
   schemaVersion: "vindeck_schema_version",
 } as const;
 
-const CURRENT_SCHEMA_VERSION = 4;
+const CURRENT_SCHEMA_VERSION = 5;
 
 function safeGet<T>(key: string, fallback: T): T {
   if (typeof window !== "undefined" && typeof localStorage === "undefined") return fallback;
@@ -84,6 +95,17 @@ export function migrateIfNeeded(): void {
     safeSet(STORAGE_KEYS.categories, mergedCategories);
     safeSet(STORAGE_KEYS.settings, mergedSettings);
     setSchemaVersion(CURRENT_SCHEMA_VERSION);
+  } else if (currentVersion === 3 || currentVersion === 4) {
+    const existingApps = safeGet<LegacyApp[]>(STORAGE_KEYS.apps, []);
+    const existingSettings = safeGet<LegacySettings>(STORAGE_KEYS.settings, DEFAULT_SETTINGS);
+
+    const cleanedApps = existingApps.map(({ statusEnabled, statusUrl, ...rest }) => rest);
+    const { statusEnabled: _s1, statusDisplay: _s2, statusCheckInterval: _s3, ...restSettings } = existingSettings;
+    const cleanedSettings = { ...restSettings, schemaVersion: CURRENT_SCHEMA_VERSION };
+
+    safeSet(STORAGE_KEYS.apps, cleanedApps);
+    safeSet(STORAGE_KEYS.settings, cleanedSettings);
+    setSchemaVersion(CURRENT_SCHEMA_VERSION);
   }
 }
 
@@ -99,7 +121,6 @@ function mergeAppsV3(existing: App[]): App[] {
         ...builtIn,
         isHidden: app.isHidden,
         isPinned: app.isPinned,
-        statusEnabled: app.statusEnabled,
         sortOrder: app.sortOrder,
         clickCount: app.clickCount,
         lastOpened: app.lastOpened,

@@ -48,6 +48,13 @@ export function DashboardContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
 
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setViewMode("list");
+    }
+  }, []);
+
   // Modals & Dialogs
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isAddAppOpen, setIsAddAppOpen] = useState(false);
@@ -57,13 +64,7 @@ export function DashboardContent() {
   const [editingApp, setEditingApp] = useState<AppType | null>(null);
   const [confirmApp, setConfirmApp] = useState<AppType | null>(null);
 
-  // App statuses - using server-side API
-  const [appStatuses, setAppStatuses] = useState<Record<string, "checking" | "reachable" | "unreachable" | "unsupported" | null>>({});
-  const [statusInfo, setStatusInfo] = useState<Record<string, { status: "checking" | "reachable" | "unreachable" | "unsupported"; lastChecked: number; latencyMs: number; reason?: string; method: string } | null>>({});
-  const statusCheckIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const initialStatusCheckDone = useRef(false);
-
-  // Clock
+  // Modals & Dialogs
   const [now, setNow] = useState<Date | null>(null);
 
   // Notes for Bento tile
@@ -71,8 +72,6 @@ export function DashboardContent() {
 
   const settings = useSettingsSelector((s) => s);
   const confirmBeforeOpen = settings.confirmBeforeOpen;
-  const statusEnabled = settings.statusEnabled;
-  const statusCheckInterval = settings.statusCheckInterval || 60;
 
   const { showSuccess, showInfo, showError } = useToast();
 
@@ -85,105 +84,7 @@ export function DashboardContent() {
     setAppsState(getApps());
     setCategoriesState(getCategories());
     setRecentNotes(getNotes().slice(0, 2));
-}, []);
-
-  // Server-side status checking
-  const checkAllStatuses = useCallback(async () => {
-    if (!statusEnabled) return;
-
-    const urls = apps.map((app): { id: string; url: string } => ({ id: app.id, url: app.statusUrl || app.url }));
-
-    if (urls.length === 0) return;
-
-    setAppStatuses((prev) => {
-      const next = { ...prev };
-      urls.forEach(({ id }) => { next[id] = "checking"; });
-      return next;
-    });
-    setStatusInfo((prev) => {
-      const next = { ...prev };
-      urls.forEach(({ id }) => { next[id] = { status: "checking", lastChecked: Date.now(), latencyMs: 0, method: "server" }; });
-      return next;
-    });
-
-    try {
-      const response = await fetch("/api/status", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ items: urls }),
-        credentials: "include",
-      });
-
-      if (!response.ok) throw new Error("Status check failed");
-
-      interface StatusResult {
-        id: string;
-        state: "checking" | "reachable" | "unreachable" | "unsupported";
-        httpStatus: number | null;
-        latencyMs: number;
-        reason?: string;
-        method: string;
-        checkedAt: string;
-      }
-
-      const results: StatusResult[] = await response.json();
-
-      setAppStatuses((prev) => {
-        const next = { ...prev };
-        results.forEach((result: StatusResult) => { next[result.id] = result.state; });
-        return next;
-      });
-      setStatusInfo((prev) => {
-        const next = { ...prev };
-        results.forEach((result: StatusResult) => {
-          next[result.id] = {
-            status: result.state,
-            lastChecked: Date.now(),
-            latencyMs: result.latencyMs,
-            reason: result.reason,
-            method: result.method,
-          };
-        });
-        return next;
-      });
-    } catch (error) {
-      console.warn("Status check failed:", error);
-      setAppStatuses((prev) => {
-        const next = { ...prev };
-        urls.forEach(({ id }) => { next[id] = "unreachable"; });
-        return next;
-      });
-      setStatusInfo((prev) => {
-        const next = { ...prev };
-        urls.forEach(({ id }) => {
-          next[id] = { status: "unreachable", lastChecked: Date.now(), latencyMs: 0, method: "server", reason: "request_failed" };
-        });
-        return next;
-      });
-    }
-  }, [apps, statusEnabled]);
-
-  useEffect(() => {
-    if (statusEnabled && !initialStatusCheckDone.current) {
-      initialStatusCheckDone.current = true;
-      checkAllStatuses();
-    }
-    if (statusEnabled) {
-      const interval = setInterval(checkAllStatuses, statusCheckInterval * 1000);
-      statusCheckIntervalRef.current = interval;
-      return () => clearInterval(interval);
-    }
-  }, [statusEnabled, checkAllStatuses, statusCheckInterval]);
-
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible" && statusEnabled) {
-        checkAllStatuses();
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
-  }, [statusEnabled, checkAllStatuses]);
+  }, []);
 
   // Keyboard shortcut / and Ctrl+K
   useEffect(() => {
@@ -225,10 +126,6 @@ export function DashboardContent() {
     if (apps.length === 0) return null;
     return [...apps].sort((a, b) => (b.clickCount || 0) - (a.clickCount || 0))[0];
   }, [apps]);
-
-  const onlineCount = useMemo(() => {
-    return Object.values(appStatuses).filter((s) => s === "reachable").length;
-  }, [appStatuses]);
 
   const handleOpenApp = (app: AppType, newTab: boolean) => {
     if (settings.confirmBeforeOpen) {
@@ -353,7 +250,6 @@ export function DashboardContent() {
         isBuiltIn: false,
         isHidden: false,
         isPinned: submitted.isPinned || false,
-        statusEnabled: true,
         sortOrder: apps.length + 1,
         clickCount: 0,
         lastOpened: null,
@@ -403,38 +299,13 @@ export function DashboardContent() {
           setSettings(updated);
           loadData();
         }}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
+        viewMode={viewMode}
+        categories={categories}
+        onViewModeChange={setViewMode}
+        onSelectCategory={setSelectedCategory}
       />
 
       <main className="flex-1 max-w-[1760px] mx-auto px-4 sm:px-6 lg:px-8 py-4 pb-28 sm:pb-8 w-full space-y-4">
-        {/* Hero Section - Single row */}
-        <section className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-100 light:text-slate-900 truncate">
-              {greetingText}
-            </h1>
-            <span className="hidden sm:inline text-xs text-slate-500 light:text-slate-500 font-medium">
-              {now ? formatDateTime(now) : "—"}
-            </span>
-          </div>
-          {apps.length > 0 && Object.keys(appStatuses).length > 0 && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800/60 light:bg-slate-100 border border-slate-700/40 light:border-slate-200 text-xs font-medium text-slate-300 light:text-slate-700 flex-shrink-0">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>{onlineCount}/{apps.length} online</span>
-            </div>
-          )}
-        </section>
-
-        {/* Toolbar Controls */}
-        <Toolbar
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          selectedCategory={selectedCategory}
-          onSelectCategory={setSelectedCategory}
-          categories={categories}
-        />
-
         {/* Favorites Section */}
         <section className="space-y-3">
             {allAppsSorted.length === 0 ? (
@@ -480,9 +351,6 @@ export function DashboardContent() {
                       onToggleHidden={handleToggleHidden}
                       onDelete={handleDeleteApp}
                       onCopyLink={handleCopyLink}
-                      status={appStatuses[app.id] ?? null}
-                      statusInfo={statusInfo[app.id] ?? null}
-                      checking={appStatuses[app.id] === "checking"}
                       openInNewTabDefault={settings.openLinksIn === "new-tab"}
                       accentColor={app.accentColor}
                     />

@@ -24,8 +24,6 @@ export interface App {
   isBuiltIn: boolean;
   isHidden: boolean;
   isPinned: boolean;
-  statusEnabled: boolean;
-  statusUrl?: string;
   sortOrder: number;
   clickCount: number;
   lastOpened: number | null;
@@ -47,8 +45,6 @@ export interface UserSettings {
   viewMode: ViewMode;
   openInNewTab: boolean;
   openLinksIn: "same-tab" | "new-tab";
-  statusEnabled: boolean;
-  statusCheckInterval: number;
   confirmBeforeOpen: boolean;
   animations: "full" | "reduced" | "follow";
   backgroundEffects: boolean;
@@ -88,14 +84,12 @@ export const DEFAULT_SETTINGS: UserSettings = {
   viewMode: "cards",
   openInNewTab: false,
   openLinksIn: "same-tab",
-  statusEnabled: true,
-  statusCheckInterval: 60,
   confirmBeforeOpen: true,
   animations: "full",
   backgroundEffects: true,
   profilePhoto: "",
   profileName: "",
-  schemaVersion: 4,
+  schemaVersion: 5,
 };
 
 export const BUILT_IN_CATEGORIES: Category[] = [

@@ -23,7 +23,7 @@ export function Toolbar({
   return (
     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 mb-4 pb-1">
       {/* Scrollable Category Chips */}
-      <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1 flex-1 min-w-0">
+      <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1 flex-1 min-w-0" data-testid="category-chips">
         <button
           onClick={() => onSelectCategory(null)}
           type="button"
@@ -68,7 +68,7 @@ export function Toolbar({
       </div>
 
       {/* Right Controls: View Mode & Popover */}
-      <div className="flex items-center gap-3 self-end sm:self-auto flex-shrink-0">
+      <div className="flex items-center gap-3 self-end sm:self-auto flex-shrink-0" data-testid="view-switcher">
         {/* Segmented View Mode Switcher */}
         <div className="flex items-center p-1 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
           <button

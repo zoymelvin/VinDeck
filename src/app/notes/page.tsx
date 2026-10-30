@@ -77,7 +77,7 @@ export default function NotesPage() {
         setNotes(getNotes());
         setSaveStatus("saved");
       }
-    }, 500);
+    }, 600);
 
     return () => clearTimeout(timer);
   }, [content, title, selectedNoteId, selectedNote]);
@@ -182,13 +182,13 @@ export default function NotesPage() {
   const otherNotes = filteredNotes.filter((n) => !n.isPinned);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
       {/* Header Bar */}
-      <header className="h-16 border-b border-slate-800 bg-slate-900/80 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
+      <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-3">
           <Link
             href="/"
-            className="flex items-center gap-2 p-2 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 transition-colors"
+            className="flex items-center gap-2 p-2 rounded-xl text-slate-400 hover:text-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
             <span className="hidden sm:inline text-sm font-medium">Dashboard</span>
@@ -216,7 +216,7 @@ export default function NotesPage() {
       <div className="flex-1 flex overflow-hidden max-w-[1760px] w-full mx-auto p-2 sm:p-4 gap-4">
         {/* Left Panel: Note List */}
         <div
-          className={`w-full sm:w-80 md:w-96 flex-shrink-0 flex flex-col bg-slate-900/60 rounded-3xl border border-slate-800/80 p-3 overflow-hidden ${
+          className={`w-full sm:w-80 md:w-96 flex-shrink-0 flex flex-col bg-white/60 dark:bg-slate-900/60 rounded-3xl border border-slate-200 dark:border-slate-800/80 p-3 overflow-hidden ${
             mobileView === "editor" ? "hidden sm:flex" : "flex"
           }`}
         >
@@ -228,7 +228,7 @@ export default function NotesPage() {
               placeholder="Search notes…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm rounded-xl bg-slate-950/80 border border-slate-800/80 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+              className="w-full pl-9 pr-3 py-2 text-sm rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-800/80 text-slate-900 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
             />
           </div>
 
@@ -251,7 +251,7 @@ export default function NotesPage() {
                         className={`w-full p-3 rounded-2xl text-left transition-all mb-1 ${
                           selectedNoteId === note.id
                             ? "bg-indigo-500/15 border border-indigo-500/30 text-indigo-300"
-                            : "bg-slate-950/40 hover:bg-slate-800/50 border border-transparent text-slate-300"
+                            : "bg-slate-100/80 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800/50 border border-transparent text-slate-900 dark:text-slate-300"
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2 mb-1">
@@ -284,7 +284,7 @@ export default function NotesPage() {
                         className={`w-full p-3 rounded-2xl text-left transition-all mb-1 ${
                           selectedNoteId === note.id
                             ? "bg-indigo-500/15 border border-indigo-500/30 text-indigo-300"
-                            : "bg-slate-950/40 hover:bg-slate-800/50 border border-transparent text-slate-300"
+                            : "bg-slate-100/80 dark:bg-slate-800/50 hover:bg-slate-200 dark:hover:bg-slate-800/50 border border-transparent text-slate-900 dark:text-slate-300"
                         }`}
                       >
                         <div className="flex items-center justify-between gap-2 mb-1">
@@ -307,7 +307,7 @@ export default function NotesPage() {
 
         {/* Right Panel: Editor & Preview */}
         <div
-          className={`flex-1 flex flex-col bg-slate-900/60 rounded-3xl border border-slate-800/80 p-4 overflow-hidden ${
+          className={`flex-1 flex flex-col bg-white/60 dark:bg-slate-900/60 rounded-3xl border border-slate-200 dark:border-slate-800/80 p-4 overflow-hidden ${
             mobileView === "list" ? "hidden sm:flex" : "flex"
           }`}
         >
@@ -326,7 +326,7 @@ export default function NotesPage() {
                   </button>
 
                   {/* Mode Selector */}
-                  <div className="flex items-center p-1 rounded-xl bg-slate-950 border border-slate-800">
+                  <div className="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
                     <button
                       onClick={() => setMode("edit")}
                       type="button"
@@ -402,7 +402,7 @@ export default function NotesPage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Note title"
-                className="w-full text-xl font-bold bg-transparent border-none outline-none text-slate-100 placeholder-slate-600 mb-3"
+                className="w-full text-xl font-bold bg-transparent border-none outline-none text-slate-900 dark:text-slate-100 placeholder-slate-500 mb-3"
               />
 
               {/* Main Content Area */}
@@ -413,7 +413,7 @@ export default function NotesPage() {
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
                     placeholder="Start typing markdown..."
-                    className={`flex-1 w-full bg-slate-950/60 border border-slate-800 rounded-2xl p-4 text-sm text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none font-mono leading-relaxed ${
+                    className={`flex-1 w-full bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 text-sm text-slate-900 dark:text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none font-mono leading-relaxed ${
                       mode === "split" ? "w-1/2" : "w-full"
                     }`}
                   />
@@ -422,7 +422,7 @@ export default function NotesPage() {
                 {/* Preview Panel */}
                 {(mode === "preview" || mode === "split") && (
                   <div
-                    className={`flex-1 bg-slate-950/40 border border-slate-800/80 rounded-2xl p-4 overflow-y-auto ${
+                    className={`flex-1 bg-slate-100/80 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-4 overflow-y-auto ${
                       mode === "split" ? "w-1/2" : "w-full"
                     }`}
                   >
@@ -432,7 +432,7 @@ export default function NotesPage() {
 
                 {/* History Drawer Overlay */}
                 {showHistory && (
-                  <div className="absolute inset-y-0 right-0 w-80 bg-slate-900 border-l border-slate-800 shadow-2xl p-4 flex flex-col z-20 animate-in slide-in-from-right duration-200">
+                  <div className="absolute inset-y-0 right-0 w-80 bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 shadow-2xl p-4 flex flex-col z-20 animate-in slide-in-from-right duration-200">
                     <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800">
                       <h3 className="font-semibold text-sm">Revision History</h3>
                       <button onClick={() => setShowHistory(false)} type="button" className="text-slate-400 hover:text-slate-200">
@@ -447,7 +447,7 @@ export default function NotesPage() {
                         selectedNote.revisions.map((rev) => (
                           <div
                             key={rev.id}
-                            className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-1.5"
+                            className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 text-xs space-y-1.5"
                           >
                             <div className="flex items-center justify-between text-slate-400">
                               <span>{formatRelativeTime(new Date(rev.timestamp))}</span>
@@ -460,7 +460,7 @@ export default function NotesPage() {
                                 <span>Restore</span>
                               </button>
                             </div>
-                            <p className="text-slate-300 line-clamp-2 font-mono text-[11px]">{rev.content}</p>
+                            <p className="text-slate-700 dark:text-slate-300 line-clamp-2 font-mono text-[11px]">{rev.content}</p>
                           </div>
                         ))
                       )}
@@ -480,7 +480,7 @@ export default function NotesPage() {
 
       {/* Undo Toast */}
       {showUndoToast && (
-        <div className="fixed bottom-6 right-6 z-50 bg-slate-900 border border-slate-800 text-slate-200 px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-in slide-in-from-bottom duration-200">
+        <div className="fixed bottom-6 right-6 z-50 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-slate-200 px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 animate-in slide-in-from-bottom duration-200">
           <span className="text-sm font-medium">Note deleted</span>
           <button
             onClick={handleUndoDelete}

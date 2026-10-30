@@ -18,34 +18,85 @@ export interface Note {
 const NOTES_STORAGE_KEY = "vindeck_notes_v2";
 const QUICK_NOTES_KEY = "vindeck_quick_notes";
 const MAX_REVISIONS = 20;
+const DEDUPE_BACKUP_KEY = "vindeck:backup:notes-dedupe";
 
 export function getNotes(): Note[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(NOTES_STORAGE_KEY);
     if (!raw) {
-      // Migrate old quick note if present
+      // Migrate old quick note if present (idempotent)
       const oldQuickNote = localStorage.getItem(QUICK_NOTES_KEY);
       if (oldQuickNote && oldQuickNote.trim().length > 0) {
-        const importedNote: Note = {
-          id: "imported-quick-note",
-          title: "Quick note (imported)",
-          content: oldQuickNote,
-          isPinned: true,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          revisions: [],
-        };
-        saveNotes([importedNote]);
-        return [importedNote];
+        const existing = localStorage.getItem(NOTES_STORAGE_KEY);
+        if (!existing) {
+          const importedNote: Note = {
+            id: "note_legacy_quicknote",
+            title: "Quick note (imported)",
+            content: oldQuickNote,
+            isPinned: true,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            revisions: [],
+          };
+          saveNotes([importedNote]);
+          localStorage.removeItem(QUICK_NOTES_KEY);
+          return [importedNote];
+        }
       }
       return [];
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    
+    // Deduplicate notes with identical title+content
+    const deduped = notesDedupe(parsed);
+    return deduped;
   } catch {
     return [];
   }
+}
+
+function notesDedupe(notes: Note[]): Note[] {
+  if (notes.length <= 1) return notes;
+  
+  // Group by title + content
+  const groups = new Map<string, Note[]>();
+  for (const note of notes) {
+    const key = `${note.title}\u0000${note.content}`;
+    const existing = groups.get(key);
+    if (existing) {
+      existing.push(note);
+    } else {
+      groups.set(key, [note]);
+    }
+  }
+  
+  let removed = 0;
+  const result: Note[] = [];
+  
+  for (const group of groups.values()) {
+    if (group.length === 1) {
+      result.push(group[0]);
+    } else {
+      // Keep oldest, remove newer duplicates
+      group.sort((a, b) => a.createdAt - b.createdAt);
+      result.push(group[0]);
+      removed += group.length - 1;
+    }
+  }
+  
+  if (removed > 0) {
+    // Backup before removing
+    try {
+      localStorage.setItem(DEDUPE_BACKUP_KEY, JSON.stringify(notes));
+    } catch {
+      // quota exceeded, skip backup
+    }
+    saveNotes(result);
+  }
+  
+  return result;
 }
 
 export function saveNotes(notes: Note[]): boolean {
