@@ -36,6 +36,7 @@ import CommandPalette from "@/components/CommandPalette";
 import { ConfirmOpenDialog } from "@/components/ConfirmOpenDialog";
 import { KeyboardShortcutsDialog } from "@/components/KeyboardShortcutsDialog";
 import { ProfileDialog } from "@/components/ProfileDialog";
+import { SettingsDialog } from "@/components/SettingsDialog";
 import { MeshBackground } from "@/components/MeshBackground";
 import { strings } from "@/lib/strings";
 
@@ -509,6 +510,13 @@ export function DashboardContent() {
           onClose={() => setIsProfileOpen(false)}
           currentName={settings.profileName || settings.greetingName}
           currentPhoto={settings.profilePhoto || ""}
+        />
+      )}
+
+      {isSettingsOpen && (
+        <SettingsDialog
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
         />
       )}
     </div>
