@@ -26,11 +26,11 @@ Gate order: `tsc --noEmit` → `lint` → `test` → `build`.
 
 ## Architecture
 
-- `src/app/` — App Router pages (`page.tsx` = login, `DashboardPage.tsx` = main dashboard, `notes/`, `settings/`)
+- `src/app/` — App Router pages (`page.tsx` = login, `DashboardPage.tsx` = main dashboard, `notes/`, `settings/`, `api/*` routes)
 - `src/components/` — UI components; `icons.ts` is the single Lucide icon registry (only icons proven to exist in installed version)
-- `src/lib/` — `types.ts`, `storage.ts` (versioned localStorage, schema v3), `defaults.ts`, `strings.ts` (all UI text), `validation.ts`, `theme-tokens.ts`, `notes.ts`, `greeting.ts`, `notes-sync.ts`
-- `src/hooks/` — `useSettingsStore.tsx` (React context + `useSyncExternalStore`, NOT zustand), `useTheme.ts`, `useToast.ts`, `useKeyboardShortcuts.ts`
-- `src/server/` — server-only modules (`db.ts`, `notes-repo.ts`, `status-check.ts`). `postgres` driver imported ONLY here, never from client components
+- `src/lib/` — `types.ts`, `storage.ts` (versioned localStorage, schema v5), `defaults.ts`, `strings.ts` (all UI text), `validation.ts`, `theme-tokens.ts`, `notes.ts`, `greeting.ts`, `auth.ts`, `sync-types.ts`, `search.ts`
+- `src/hooks/` — `useSettingsStore.tsx`, `useSyncStore.tsx` (React context + `useSyncExternalStore`, NOT zustand), `useTheme.ts`, `useToast.ts`, `useKeyboardShortcuts.ts`
+- `src/server/` — server-only modules (`db.ts`, `notes-repo.ts`, `sync-repo.ts`). `postgres` driver imported ONLY here, never from client components
 - `public/icons/` — brand PNGs (immich, vaultwarden, cockpit, filebrowser) + ICONS.md
 - `public/sw.js` — minimal PWA service worker (pass-through, no caching)
 - Tests: `src/lib/__tests__/`, `src/components/__tests__/`, `tests/e2e/`
@@ -38,25 +38,24 @@ Gate order: `tsc --noEmit` → `lint` → `test` → `build`.
 ## Key Conventions
 
 - All UI text in English, sourced from `src/lib/strings.ts`
-- No zustand; settings use React context + `useSyncExternalStore`
+- No zustand; settings/sync use React context + `useSyncExternalStore`
 - Only new dependencies allowed: `motion`, `postgres` (server-only)
 - Lucide icons only from `src/components/icons.ts`
 - No `any`, `@ts-ignore`, `eslint-disable`, `dangerouslySetInnerHTML`
 - No `transition: all`, empty `try/catch`, `setTimeout` hacks
 - Schema changes require version bump + migration + tests in `storage.ts`
-- Export/import validates schema version strictly (old exports still importable)
-- CSP: `img-src 'self' data: https:` only (connect-src removed — status checks are server-side)
-- Status checks: server-side POST /api/status (Node runtime, session required, SSRF-protected), browser fallback for LAN apps
+- Export/import validates schema version strictly (old exports still importable via migration)
+- CSP: `img-src 'self' data: https:` and `connect-src 'self' https:` (see next.config.ts)
 - Theme: single ThemeProvider via useSyncExternalStore, inline init script in `<head>`, `:root[data-theme="light|dark"]` tokens
 - Notes sync: Neon Postgres via DATABASE_URL, local-only mode when unset, build must succeed without DATABASE_URL
 - `postgres` driver must not appear in client bundle
+- Accent colors: 7 options (blue, indigo, violet, pink, rose, amber, emerald) — stored per-app and in settings
 
 ## Storage
 
-- localStorage keys: `vindeck_settings_v2`, `vindeck_apps_v2`, `vindeck_categories_v2`, `vindeck_notes_v2`, `vindeck_schema_version`
-- Schema v3: built-in apps migrated to PNG icons, categories translated (Keamanan→Security, Sistem→System, File→Files), descriptions English
+- localStorage keys: `vindeck_apps`, `vindeck_categories`, `vindeck_settings_v2`, `vindeck_clicks`, `vindeck_notes`, `vindeck_schema_version`
+- Schema v5: status fields removed (v3/v4 migration), profile in settings (`displayName`, `photo`), built-in apps use PNG icons, categories English
 - `iconCustomized` flag prevents overwriting user-customized built-in app icons
-- Accent color removed; profile stored in settings (`displayName`, `photo`)
 
 ## Ports
 

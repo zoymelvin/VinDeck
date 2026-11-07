@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 import { HydrationMarker } from "@/components/HydrationMarker";
 
@@ -39,6 +38,10 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+const themeInitScript = `(function(){try{var t=localStorage.getItem('vindeck_settings_v2');var s=t?JSON.parse(t):{};var m=s.theme||'system';var d=m==='dark'||(m==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');document.documentElement.style.colorScheme=d?'dark':'light';}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`;
+
+const swRegisterScript = `if('serviceWorker' in navigator && location.hostname !== 'localhost'){navigator.serviceWorker.register('/sw.js');}`;
+
 export default function RootLayout({ children }: React.PropsWithChildren) {
   return (
     <html lang="en" suppressHydrationWarning className={`${plusJakartaSans.variable} ${jetbrainsMono.variable}`}>
@@ -46,9 +49,10 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <link rel="manifest" href="/manifest.webmanifest" />
-        <Script id="theme-init" strategy="beforeInteractive">
-          {`(function(){try{var t=localStorage.getItem('vindeck_settings_v2');var s=t?JSON.parse(t):{};var m=s.theme||'system';var d=m==='dark'||(m==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',d?'dark':'light');document.documentElement.style.colorScheme=d?'dark':'light';}catch(e){document.documentElement.setAttribute('data-theme','dark');}})();`}
-        </Script>
+        <script
+          id="theme-init"
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
       </head>
       <body
         suppressHydrationWarning
@@ -56,9 +60,10 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
       >
         <HydrationMarker />
         {children}
-        <Script id="sw-register" strategy="afterInteractive">
-          {`if('serviceWorker' in navigator && location.hostname !== 'localhost'){navigator.serviceWorker.register('/sw.js');}`}
-        </Script>
+        <script
+          id="sw-register"
+          dangerouslySetInnerHTML={{ __html: swRegisterScript }}
+        />
       </body>
     </html>
   );

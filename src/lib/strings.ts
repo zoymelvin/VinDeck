@@ -135,8 +135,8 @@ export const strings = {
     },
   },
   appCard: {
-    open: "Open",
-    openInNewTab: "Open in new tab",
+    open: "Open in new tab",
+    openInNewTab: "Open in this tab",
     copyLink: "Copy link",
     edit: "Edit",
     pin: "Pin",

@@ -81,6 +81,26 @@ export const BUILT_IN_APPS: App[] = [
     createdAt: Date.now(),
     updatedAt: Date.now(),
   },
+  {
+    id: "9router",
+    name: "9Router",
+    description: "Network routing and management",
+    url: "http://192.168.100.100:20128",
+    icon: "",
+    iconType: "image",
+    iconSrc: "/icons/9router.png",
+    accentColor: "amber",
+    category: "system",
+    tags: ["network", "router", "routing", "management"],
+    isBuiltIn: true,
+    isHidden: false,
+    isPinned: true,
+    sortOrder: 5,
+    clickCount: 0,
+    lastOpened: null,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  },
 ];
 
 export const BUILT_IN_CATEGORIES: Category[] = [
