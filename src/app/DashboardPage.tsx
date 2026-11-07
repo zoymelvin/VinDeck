@@ -128,24 +128,29 @@ export function DashboardContent() {
   }, [apps]);
 
   const handleOpenApp = (app: AppType, newTab: boolean) => {
+    const openInNewTab = newTab ?? (settings.openLinksIn === "new-tab");
+
+    // For new tab: open immediately (direct user action, not blocked)
+    if (openInNewTab) {
+      recordClick(app.id);
+      loadData();
+      window.open(app.url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    // For same tab: show confirmation if enabled
     if (settings.confirmBeforeOpen) {
       setConfirmApp(app);
     } else {
-      handleConfirmOpen(app, newTab);
+      handleConfirmOpen(app, false);
     }
   };
 
-  const handleConfirmOpen = (app: AppType, newTabOverride?: boolean) => {
+  const handleConfirmOpen = (app: AppType, _newTabOverride?: boolean) => {
     recordClick(app.id);
     loadData();
     setConfirmApp(null);
-
-    const openInNewTab = newTabOverride ?? (settings.openLinksIn === "new-tab");
-    if (openInNewTab) {
-      window.open(app.url, "_blank", "noopener,noreferrer");
-    } else {
-      window.location.assign(app.url);
-    }
+    window.location.assign(app.url);
   };
 
   const handleTogglePin = (app: AppType) => {
