@@ -130,11 +130,17 @@ export function DashboardContent() {
   const handleOpenApp = (app: AppType, newTab: boolean) => {
     const openInNewTab = newTab ?? (settings.openLinksIn === "new-tab");
 
-    // For new tab: open immediately (direct user action, not blocked)
+    // For new tab: use anchor click (more reliable than window.open)
     if (openInNewTab) {
       recordClick(app.id);
       loadData();
-      window.open(app.url, "_blank", "noopener,noreferrer");
+      const a = document.createElement("a");
+      a.href = app.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
       return;
     }
 
