@@ -20,6 +20,13 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+## Deploy
+
+- Set `engines.node` in `package.json` to match your Vercel Node.js runtime (e.g. `22.x`).
+- Keep `@types/node` on the same major version as the runtime so it satisfies vitest/vite peer requirements.
+- Do not use `--legacy-peer-deps`, `--force`, or `.npmrc` workarounds.
+- Before deploying, verify in a clean worktree: `npm install` (no flags), `npm ci`, `npm run build`, and `npm test`.
+
 ## Profile Photo
 
 Profile photos can be set via the avatar menu or Settings page:

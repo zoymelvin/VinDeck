@@ -212,7 +212,42 @@ function mergeCategories(builtIn: Category[], existing: Category[]): Category[] 
 
 export function getApps(): App[] {
   migrateIfNeeded();
-  return safeGet<App[]>(STORAGE_KEYS.apps, BUILT_IN_APPS);
+  const existing = safeGet<App[]>(STORAGE_KEYS.apps, BUILT_IN_APPS);
+  const builtInMap = new Map(BUILT_IN_APPS.map((a) => [a.id, a]));
+  let updated = false;
+
+  const result = existing.map((app) => {
+    const builtIn = builtInMap.get(app.id);
+    if (builtIn && app.isBuiltIn && !app.iconCustomized) {
+      if (
+        app.iconSrc !== builtIn.iconSrc ||
+        app.url !== builtIn.url ||
+        app.name !== builtIn.name
+      ) {
+        updated = true;
+        return {
+          ...app,
+          name: builtIn.name,
+          url: builtIn.url,
+          iconSrc: builtIn.iconSrc,
+          description: builtIn.description,
+        };
+      }
+    }
+    return app;
+  });
+
+  for (const builtIn of BUILT_IN_APPS) {
+    if (!result.some((a) => a.id === builtIn.id)) {
+      result.push(builtIn);
+      updated = true;
+    }
+  }
+
+  if (updated) {
+    safeSet(STORAGE_KEYS.apps, result);
+  }
+  return result;
 }
 
 export function setApps(apps: App[]): void {

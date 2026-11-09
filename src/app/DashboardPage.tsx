@@ -40,10 +40,11 @@ import { ProfileDialog } from "@/components/ProfileDialog";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { MeshBackground } from "@/components/MeshBackground";
 import { strings } from "@/lib/strings";
+import { BUILT_IN_APPS, BUILT_IN_CATEGORIES } from "@/lib/defaults";
 
 export function DashboardContent() {
-  const [apps, setAppsState] = useState<AppType[]>(() => getApps());
-  const [categories, setCategoriesState] = useState<Category[]>(() => getCategories());
+  const [apps, setAppsState] = useState<AppType[]>(BUILT_IN_APPS);
+  const [categories, setCategoriesState] = useState<Category[]>(BUILT_IN_CATEGORIES);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
@@ -68,7 +69,7 @@ export function DashboardContent() {
   const [now, setNow] = useState<Date | null>(null);
 
   // Notes for Bento tile
-  const [recentNotes, setRecentNotes] = useState<Note[]>(() => getNotes().slice(0, 2));
+  const [recentNotes, setRecentNotes] = useState<Note[]>([]);
 
   const settings = useSettingsSelector((s) => s);
   const confirmBeforeOpen = settings.confirmBeforeOpen;
@@ -85,6 +86,12 @@ export function DashboardContent() {
     setCategoriesState(getCategories());
     setRecentNotes(getNotes().slice(0, 2));
   }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      loadData();
+    });
+  }, [loadData]);
 
   // Keyboard shortcut / and Ctrl+K
   useEffect(() => {
@@ -128,24 +135,35 @@ export function DashboardContent() {
   }, [apps]);
 
   const handleOpenApp = (app: AppType, newTab: boolean) => {
+    const openInNewTab = newTab ?? (settings.openLinksIn === "new-tab");
+
+    // For new tab: use anchor click (more reliable than window.open)
+    if (openInNewTab) {
+      recordClick(app.id);
+      loadData();
+      const a = document.createElement("a");
+      a.href = app.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    }
+
+    // For same tab: show confirmation if enabled
     if (settings.confirmBeforeOpen) {
       setConfirmApp(app);
     } else {
-      handleConfirmOpen(app, newTab);
+      handleConfirmOpen(app, false);
     }
   };
 
-  const handleConfirmOpen = (app: AppType, newTabOverride?: boolean) => {
+  const handleConfirmOpen = (app: AppType, _newTabOverride?: boolean) => {
     recordClick(app.id);
     loadData();
     setConfirmApp(null);
-
-    const openInNewTab = newTabOverride ?? (settings.openLinksIn === "new-tab");
-    if (openInNewTab) {
-      window.open(app.url, "_blank", "noopener,noreferrer");
-    } else {
-      window.location.assign(app.url);
-    }
+    window.location.assign(app.url);
   };
 
   const handleTogglePin = (app: AppType) => {

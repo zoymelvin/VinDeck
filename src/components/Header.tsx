@@ -71,6 +71,11 @@ export function Header({
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const avatarRef = useRef<HTMLButtonElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    queueMicrotask(() => setMounted(true));
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -100,6 +105,19 @@ export function Header({
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isUserMenuOpen]);
+
+  const greeting = mounted
+    ? (() => {
+        const hour = new Date().getHours();
+        if (hour >= 5 && hour < 12) return strings.greeting.morning;
+        if (hour >= 12 && hour < 17) return strings.greeting.afternoon;
+        return strings.greeting.evening;
+      })()
+    : strings.greeting.evening;
+
+  const dateTime = mounted
+    ? `${new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })} · ${new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false })}`
+    : "";
 
   const getInitials = (name: string) => {
     if (!name) return "V";
@@ -218,17 +236,10 @@ export function Header({
         <div className="flex items-center justify-between gap-4">
           <div className="flex flex-col min-w-0">
             <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate">
-              {(() => {
-                const hour = new Date().getHours();
-                if (hour >= 5 && hour < 12) return "Good morning";
-                if (hour >= 12 && hour < 17) return "Good afternoon";
-                return "Good evening";
-              })()}
+              {greeting}
             </h1>
             <span className="text-xs text-slate-500 dark:text-slate-500 font-medium tabular-nums">
-              {new Date().toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" })}
-              {" · "}
-              {new Date().toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false })}
+              {dateTime}
             </span>
           </div>
         </div>

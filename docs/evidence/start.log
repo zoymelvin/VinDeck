@@ -1,0 +1,7 @@
+npm notice run zoy-dashboard@0.1.0 start
+npm notice run next start -p 3101
+▲ Next.js 16.4.3
+- Local:         http://localhost:3101
+- Network:       http://192.168.100.123:3101
+✓ Ready in 109ms
+✓ Running next.config.ts took 26ms

@@ -32,15 +32,8 @@ import { formatRelativeTime } from "@/lib/greeting";
 import { strings } from "@/lib/strings";
 
 export default function NotesPage() {
-  const [notes, setNotes] = useState<Note[]>(() => {
-    const loadedNotes = getNotes();
-    if (loadedNotes.length > 0) return loadedNotes;
-    const initial = createNote("My First Note", "# Welcome to VinDeck Notes\n\nStart typing here...");
-    return [initial];
-  });
-  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(() => {
-    return notes.length > 0 ? notes[0].id : null;
-  });
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [mode, setMode] = useState<"edit" | "preview" | "split">("edit");
   const [showHistory, setShowHistory] = useState(false);
@@ -49,13 +42,29 @@ export default function NotesPage() {
   const [showUndoToast, setShowUndoToast] = useState(false);
 
   // Editor states
-  const [title, setTitle] = useState(() => (notes.length > 0 ? notes[0].title : ""));
-  const [content, setContent] = useState(() => (notes.length > 0 ? notes[0].content : ""));
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
 
   // Mobile navigation
   const [mobileView, setMobileView] = useState<"list" | "editor">("list");
 
   const selectedNote = notes.find((n) => n.id === selectedNoteId);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      let loaded = getNotes();
+      if (loaded.length === 0) {
+        createNote("My First Note", "# Welcome to VinDeck Notes\\n\\nStart typing here...");
+        loaded = getNotes();
+      }
+      setNotes(loaded);
+      if (loaded.length > 0) {
+        setSelectedNoteId(loaded[0].id);
+        setTitle(loaded[0].title);
+        setContent(loaded[0].content);
+      }
+    });
+  }, []);
 
   const handleSelectNote = (note: Note) => {
     setSelectedNoteId(note.id);

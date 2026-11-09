@@ -1,0 +1,37 @@
+npm notice run zoy-dashboard@0.1.0 build
+npm notice run next build
+▲ Next.js 16.4.3 (Turbopack)
+✓ Running next.config.ts took 23ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 3.6s
+  Running TypeScript ...
+  Finished TypeScript in 3.0s ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/8) ...
+  Generating static pages using 7 workers (2/8) 
+(node:523303) ExperimentalWarning: localStorage is not available because --localstorage-file was not provided.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  Generating static pages using 7 workers (4/8) 
+  Generating static pages using 7 workers (6/8) 
+✓ Generating static pages using 7 workers (8/8) in 193ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/login
+├ ƒ /api/logout
+├ ƒ /api/notes
+├ ƒ /api/notes/[id]
+├ ƒ /api/notes/[id]/revisions
+├ ƒ /api/notes/[id]/revisions/[rid]/restore
+├ ƒ /api/notes/[id]/undelete
+├ ƒ /api/sync
+├ ○ /login
+└ ○ /notes
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
