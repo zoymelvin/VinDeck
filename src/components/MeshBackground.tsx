@@ -3,10 +3,18 @@
 import { motion, useMotionValue, useSpring, useAnimationFrame } from "motion/react";
 import { useSettingsSelector } from "@/hooks/useSettingsStore";
 import { useTheme } from "@/hooks/useTheme";
-import { useSyncExternalStore } from "react";
+import { useState, useEffect, useSyncExternalStore } from "react";
 
 export function MeshBackground({ className = "", children }: { className?: string; children?: React.ReactNode }) {
+  const [mounted, setMounted] = useState(false);
   const { theme } = useTheme();
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setMounted(true);
+    });
+  }, []);
+
   const backgroundEffects = useSettingsSelector((s) => s.backgroundEffects);
   const animations = useSettingsSelector((s) => s.animations);
   const reducedMotion = animations === "reduced";
@@ -29,7 +37,13 @@ export function MeshBackground({ className = "", children }: { className?: strin
   );
 
   // Check for ?fx=off
-  const fxOff = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("fx") === "off";
+  const [fxOff, setFxOff] = useState(false);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      setFxOff(new URLSearchParams(window.location.search).get("fx") === "off");
+    });
+  }, []);
 
   const enabled = backgroundEffects && !reducedMotion && !fxOff;
 
@@ -71,6 +85,12 @@ export function MeshBackground({ className = "", children }: { className?: strin
       <rect width="100%" height="100%" filter="url(#noise)" opacity="0.03"/>
     </svg>
   `)}`;
+
+  if (!mounted) {
+    return (
+      <div style={meshStyle} className={className} aria-hidden="true" />
+    );
+  }
 
   return (
     <div style={meshStyle} className={className} aria-hidden="true">

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 import { HydrationMarker } from "@/components/HydrationMarker";
 
@@ -49,8 +50,9 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <link rel="manifest" href="/manifest.webmanifest" />
-        <script
+        <Script
           id="theme-init"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{ __html: themeInitScript }}
         />
       </head>
@@ -60,8 +62,9 @@ export default function RootLayout({ children }: React.PropsWithChildren) {
       >
         <HydrationMarker />
         {children}
-        <script
+        <Script
           id="sw-register"
+          strategy="afterInteractive"
           dangerouslySetInnerHTML={{ __html: swRegisterScript }}
         />
       </body>

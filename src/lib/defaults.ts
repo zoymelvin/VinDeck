@@ -101,6 +101,26 @@ export const BUILT_IN_APPS: App[] = [
     createdAt: Date.now(),
     updatedAt: Date.now(),
   },
+  {
+    id: "hermes",
+    name: "Hermes Dashboard",
+    description: "AI assistant and automation dashboard",
+    url: "https://hermesdashboard.zoymelvin.my.id/",
+    icon: "",
+    iconType: "image",
+    iconSrc: "/icons/hermes.png",
+    accentColor: "rose",
+    category: "system",
+    tags: ["hermes", "dashboard", "ai", "automation"],
+    isBuiltIn: true,
+    isHidden: false,
+    isPinned: true,
+    sortOrder: 6,
+    clickCount: 0,
+    lastOpened: null,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  },
 ];
 
 export const BUILT_IN_CATEGORIES: Category[] = [

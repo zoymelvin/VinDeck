@@ -69,7 +69,7 @@ export function AppIcon({
     iconType === "brand" ||
     iconType === "image" ||
     icon.startsWith("/") ||
-    ["immich", "vaultwarden", "cockpit", "filebrowser"].includes(icon.toLowerCase());
+    ["immich", "vaultwarden", "cockpit", "filebrowser", "9router", "hermes"].includes(icon.toLowerCase());
 
   if (isBrandOrImage && !imgError) {
     const src = icon.startsWith("/")

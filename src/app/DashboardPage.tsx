@@ -40,10 +40,11 @@ import { ProfileDialog } from "@/components/ProfileDialog";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { MeshBackground } from "@/components/MeshBackground";
 import { strings } from "@/lib/strings";
+import { BUILT_IN_APPS, BUILT_IN_CATEGORIES } from "@/lib/defaults";
 
 export function DashboardContent() {
-  const [apps, setAppsState] = useState<AppType[]>(() => getApps());
-  const [categories, setCategoriesState] = useState<Category[]>(() => getCategories());
+  const [apps, setAppsState] = useState<AppType[]>(BUILT_IN_APPS);
+  const [categories, setCategoriesState] = useState<Category[]>(BUILT_IN_CATEGORIES);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("cards");
@@ -68,7 +69,7 @@ export function DashboardContent() {
   const [now, setNow] = useState<Date | null>(null);
 
   // Notes for Bento tile
-  const [recentNotes, setRecentNotes] = useState<Note[]>(() => getNotes().slice(0, 2));
+  const [recentNotes, setRecentNotes] = useState<Note[]>([]);
 
   const settings = useSettingsSelector((s) => s);
   const confirmBeforeOpen = settings.confirmBeforeOpen;
@@ -85,6 +86,12 @@ export function DashboardContent() {
     setCategoriesState(getCategories());
     setRecentNotes(getNotes().slice(0, 2));
   }, []);
+
+  useEffect(() => {
+    queueMicrotask(() => {
+      loadData();
+    });
+  }, [loadData]);
 
   // Keyboard shortcut / and Ctrl+K
   useEffect(() => {
